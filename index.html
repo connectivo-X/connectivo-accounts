@@ -63,6 +63,10 @@
 
   .app-body{display:flex;flex:1;align-items:stretch}
   .sidebar{width:212px;flex-shrink:0;background:var(--paper);border-right:1px solid var(--rule-strong);padding:18px 0}
+  .qe-btn{display:flex;align-items:center;justify-content:center;gap:6px;width:calc(100% - 24px);margin:0 12px 18px;
+    background:var(--gold);color:#fff;border:none;border-radius:var(--radius);padding:12px 10px;font-size:14px;
+    font-weight:700;cursor:pointer;box-shadow:0 2px 6px rgba(184,134,46,.3)}
+  .qe-btn:hover{background:#9C7126}
   .side-label{font-size:10.5px;letter-spacing:1px;color:var(--ink-soft);padding:0 18px 10px;font-weight:600}
   .side-btn{display:block;width:100%;text-align:left;background:none;border:none;border-left:3px solid transparent;
     padding:13px 18px;font-size:14.5px;font-weight:600;color:var(--ink-soft);cursor:pointer}
@@ -187,6 +191,7 @@
     .side-label{display:none}
     .side-btn{border-left:none;border-bottom:3px solid transparent;white-space:nowrap;width:auto;padding:12px 18px}
     .side-btn.active{border-left-color:transparent;border-bottom-color:var(--gold)}
+    .qe-btn{width:auto;flex-shrink:0;margin:10px}
     .main-area{padding:18px 14px 50px}
     .summary-row{grid-template-columns:repeat(2,1fr)}
     .report-top{grid-template-columns:1fr}
@@ -241,6 +246,7 @@
 
   <div class="app-body">
     <nav class="sidebar">
+      <button class="qe-btn" onclick="openQuickEntry()">&#9889; Quick Entry</button>
       <div class="side-label">MENU</div>
       <button class="side-btn active" data-tab="cashbook" onclick="switchTab('cashbook')">Cash Book</button>
       <button class="side-btn" data-tab="report" onclick="switchTab('report')">Expense Report</button>
@@ -252,7 +258,7 @@
       <div class="tab-panel active" id="panel-cashbook">
         <div class="section-head">
           <h2>Cash &amp; Bank Book</h2>
-          <div class="head-actions"><button class="btn btn-gold" onclick="openTxnModal()">+ New entry</button></div>
+          <div class="head-actions"><button class="btn btn-gold" onclick="openQuickEntry()">+ Quick Entry</button></div>
         </div>
 
         <div class="period-bar">
@@ -284,7 +290,7 @@
           <h2>Monthly Expense Report</h2>
           <div class="head-actions">
             <button class="btn btn-ghost" onclick="openCatModal()">+ Add category</button>
-            <button class="btn btn-gold" onclick="openTxnModal()">+ New entry</button>
+            <button class="btn btn-gold" onclick="openQuickEntry()">+ Quick Entry</button>
           </div>
         </div>
 
@@ -316,10 +322,19 @@
 <!-- ===== Transaction modal ===== -->
 <div class="overlay" id="txnOverlay">
   <div class="modal">
-    <div class="modal-head"><h3 id="txnModalTitle">New entry</h3><button class="close-x" onclick="closeTxnModal()">&times;</button></div>
+    <div class="modal-head"><h3 id="txnModalTitle">Quick Entry</h3><button class="close-x" onclick="closeTxnModal()">&times;</button></div>
     <div class="modal-body">
       <input type="hidden" id="txnId">
-      <div class="field"><label>Category</label><select id="txnCategory"></select></div>
+      <div class="field"><label>Category</label><select id="txnCategory" onchange="onTxnCategoryChange()"></select></div>
+      <div class="field" id="txnNewCatFields" style="display:none;background:#FAFBFA;border:1px solid var(--rule);border-radius:var(--radius);padding:12px">
+        <label>New category name</label>
+        <input type="text" id="txnNewCatName" placeholder="e.g. Office Rent">
+        <div class="radio-row" id="txnNewCatType" style="margin-top:10px">
+          <label class="radio-opt" data-val="expense"><input type="radio" name="txnNewCatTypeR" value="expense">Expense</label>
+          <label class="radio-opt" data-val="income"><input type="radio" name="txnNewCatTypeR" value="income">Income</label>
+        </div>
+        <input type="text" id="txnNewCatGroup" placeholder="Group (optional), e.g. Utilities" list="groupList" style="margin-top:10px">
+      </div>
       <div class="field"><label>Date</label><input type="date" id="txnDate"></div>
       <div class="field"><label>Amount</label><input type="number" id="txnAmount" placeholder="0" min="0" step="0.01"></div>
       <div class="field">

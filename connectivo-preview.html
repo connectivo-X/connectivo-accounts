@@ -63,6 +63,10 @@
 
   .app-body{display:flex;flex:1;align-items:stretch}
   .sidebar{width:212px;flex-shrink:0;background:var(--paper);border-right:1px solid var(--rule-strong);padding:18px 0}
+  .qe-btn{display:flex;align-items:center;justify-content:center;gap:6px;width:calc(100% - 24px);margin:0 12px 18px;
+    background:var(--gold);color:#fff;border:none;border-radius:var(--radius);padding:12px 10px;font-size:14px;
+    font-weight:700;cursor:pointer;box-shadow:0 2px 6px rgba(184,134,46,.3)}
+  .qe-btn:hover{background:#9C7126}
   .side-label{font-size:10.5px;letter-spacing:1px;color:var(--ink-soft);padding:0 18px 10px;font-weight:600}
   .side-btn{display:block;width:100%;text-align:left;background:none;border:none;border-left:3px solid transparent;
     padding:13px 18px;font-size:14.5px;font-weight:600;color:var(--ink-soft);cursor:pointer}
@@ -187,6 +191,7 @@
     .side-label{display:none}
     .side-btn{border-left:none;border-bottom:3px solid transparent;white-space:nowrap;width:auto;padding:12px 18px}
     .side-btn.active{border-left-color:transparent;border-bottom-color:var(--gold)}
+    .qe-btn{width:auto;flex-shrink:0;margin:10px}
     .main-area{padding:18px 14px 50px}
     .summary-row{grid-template-columns:repeat(2,1fr)}
     .report-top{grid-template-columns:1fr}
@@ -241,6 +246,7 @@
 
   <div class="app-body">
     <nav class="sidebar">
+      <button class="qe-btn" onclick="openQuickEntry()">&#9889; Quick Entry</button>
       <div class="side-label">MENU</div>
       <button class="side-btn active" data-tab="cashbook" onclick="switchTab('cashbook')">Cash Book</button>
       <button class="side-btn" data-tab="report" onclick="switchTab('report')">Expense Report</button>
@@ -252,7 +258,7 @@
       <div class="tab-panel active" id="panel-cashbook">
         <div class="section-head">
           <h2>Cash &amp; Bank Book</h2>
-          <div class="head-actions"><button class="btn btn-gold" onclick="openTxnModal()">+ New entry</button></div>
+          <div class="head-actions"><button class="btn btn-gold" onclick="openQuickEntry()">+ Quick Entry</button></div>
         </div>
 
         <div class="period-bar">
@@ -284,7 +290,7 @@
           <h2>Monthly Expense Report</h2>
           <div class="head-actions">
             <button class="btn btn-ghost" onclick="openCatModal()">+ Add category</button>
-            <button class="btn btn-gold" onclick="openTxnModal()">+ New entry</button>
+            <button class="btn btn-gold" onclick="openQuickEntry()">+ Quick Entry</button>
           </div>
         </div>
 
@@ -316,10 +322,19 @@
 <!-- ===== Transaction modal ===== -->
 <div class="overlay" id="txnOverlay">
   <div class="modal">
-    <div class="modal-head"><h3 id="txnModalTitle">New entry</h3><button class="close-x" onclick="closeTxnModal()">&times;</button></div>
+    <div class="modal-head"><h3 id="txnModalTitle">Quick Entry</h3><button class="close-x" onclick="closeTxnModal()">&times;</button></div>
     <div class="modal-body">
       <input type="hidden" id="txnId">
-      <div class="field"><label>Category</label><select id="txnCategory"></select></div>
+      <div class="field"><label>Category</label><select id="txnCategory" onchange="onTxnCategoryChange()"></select></div>
+      <div class="field" id="txnNewCatFields" style="display:none;background:#FAFBFA;border:1px solid var(--rule);border-radius:var(--radius);padding:12px">
+        <label>New category name</label>
+        <input type="text" id="txnNewCatName" placeholder="e.g. Office Rent">
+        <div class="radio-row" id="txnNewCatType" style="margin-top:10px">
+          <label class="radio-opt" data-val="expense"><input type="radio" name="txnNewCatTypeR" value="expense">Expense</label>
+          <label class="radio-opt" data-val="income"><input type="radio" name="txnNewCatTypeR" value="income">Income</label>
+        </div>
+        <input type="text" id="txnNewCatGroup" placeholder="Group (optional), e.g. Utilities" list="groupList" style="margin-top:10px">
+      </div>
       <div class="field"><label>Date</label><input type="date" id="txnDate"></div>
       <div class="field"><label>Amount</label><input type="number" id="txnAmount" placeholder="0" min="0" step="0.01"></div>
       <div class="field">
@@ -541,7 +556,7 @@ function ledgerSide(t, isCr){
     <td class="date-c${isCr ? ' mid' : ''}">${fmtDate(t.date)}</td>
     <td class="head-acct"><div class="acct-line"><div><div>${esc(name)}</div>${note}</div>
       <span class="acts">
-        <button class="icon-btn" title="Edit" onclick="openTxnModal('${t.id}')">&#9998;</button>
+        <button class="icon-btn" title="Edit" onclick="openQuickEntry('${t.id}')">&#9998;</button>
         <button class="icon-btn danger" title="Delete" onclick="deleteTxn('${t.id}')">&#128465;</button>
       </span></div></td>
     <td class="small">${esc(t.ref || '')}</td>
@@ -764,17 +779,22 @@ function fillCatOptions(sel){
   let h = '';
   if(inc.length) h += '<optgroup label="Income (Dr.)">'  + inc.map(c => `<option value="${c.id}">${esc(c.name)}</option>`).join('') + '</optgroup>';
   if(exp.length) h += '<optgroup label="Expense (Cr.)">' + exp.map(c => `<option value="${c.id}">${esc(c.name)}</option>`).join('') + '</optgroup>';
+  h += '<option value="__new__">+ Create new category&hellip;</option>';
   el.innerHTML = h;
   if(sel) el.value = sel;
+  else if(!categories.length) el.value = '__new__';
+  onTxnCategoryChange();
+}
+function onTxnCategoryChange(){
+  const isNew = document.getElementById('txnCategory').value === '__new__';
+  document.getElementById('txnNewCatFields').style.display = isNew ? 'block' : 'none';
 }
 function defaultEntryDate(){
   const today = new Date();
   if(today.getFullYear() === cbYear && today.getMonth() === cbMonth) return today.toISOString().slice(0,10);
   return `${cbYear}-${String(cbMonth+1).padStart(2,'0')}-01`;
 }
-function openTxnModal(id){
-  if(!categories.length){ showToast('Add a category first — an entry needs one.'); switchTab('report'); return; }
-  fillCatOptions();
+function openQuickEntry(id){
   if(id){
     const t = transactions.find(x => x.id === id);
     document.getElementById('txnModalTitle').textContent = 'Edit entry';
@@ -787,8 +807,9 @@ function openTxnModal(id){
     document.getElementById('txnVc').value     = t.vcNo  || '';
     setRadio('txnPayType', t.paymentType);
   } else {
-    document.getElementById('txnModalTitle').textContent = 'New entry';
+    document.getElementById('txnModalTitle').textContent = 'Quick Entry';
     document.getElementById('txnId').value     = '';
+    fillCatOptions();
     document.getElementById('txnDate').value   = defaultEntryDate();
     document.getElementById('txnAmount').value = '';
     document.getElementById('txnDesc').value   = '';
@@ -796,13 +817,16 @@ function openTxnModal(id){
     document.getElementById('txnVc').value     = '';
     setRadio('txnPayType', 'cash');
   }
+  document.getElementById('txnNewCatName').value  = '';
+  document.getElementById('txnNewCatGroup').value = '';
+  setRadio('txnNewCatType', 'expense');
   document.getElementById('txnOverlay').classList.add('active');
 }
 function closeTxnModal(){ document.getElementById('txnOverlay').classList.remove('active'); }
 
 async function saveTxn(){
   const id          = document.getElementById('txnId').value;
-  const categoryId  = document.getElementById('txnCategory').value;
+  const categorySel = document.getElementById('txnCategory').value;
   const date        = document.getElementById('txnDate').value;
   const amount      = parseFloat(document.getElementById('txnAmount').value);
   const pay         = document.querySelector('#txnPayType input:checked');
@@ -810,10 +834,29 @@ async function saveTxn(){
   const ref         = document.getElementById('txnRef').value.trim();
   const vcNo        = document.getElementById('txnVc').value.trim();
 
-  if(!categoryId){ showToast('Choose a category.'); return; }
+  if(!categorySel){ showToast('Choose a category.'); return; }
+
+  let newCatName, newCatGroup, newCatType;
+  if(categorySel === '__new__'){
+    newCatName  = document.getElementById('txnNewCatName').value.trim();
+    newCatGroup = document.getElementById('txnNewCatGroup').value.trim();
+    newCatType  = document.querySelector('#txnNewCatType input:checked');
+    if(!newCatName){ showToast('Enter a name for the new category.'); return; }
+    if(!newCatType){ showToast('Choose income or expense for the new category.'); return; }
+  }
   if(!date){ showToast('Pick a date.'); return; }
   if(isNaN(amount) || amount <= 0){ showToast('Enter an amount greater than zero.'); return; }
   if(!pay){ showToast('Choose cash or bank.'); return; }
+
+  let categoryId = categorySel;
+  let createdCategory = false;
+  if(categorySel === '__new__'){
+    const newCat = { id: uid('cat'), name: newCatName, group: newCatGroup, type: newCatType.value };
+    categories.push(newCat);
+    await persistCategories();
+    categoryId = newCat.id;
+    createdCategory = true;
+  }
 
   if(id) Object.assign(transactions.find(x => x.id === id),
     { categoryId, date, amount, paymentType: pay.value, description, ref, vcNo });
@@ -822,7 +865,8 @@ async function saveTxn(){
   await persistTransactions();
   const [sy,sm] = date.split('-').map(Number);
   cbYear = sy; cbMonth = sm - 1;
-  renderAll(); closeTxnModal(); showToast('Entry saved');
+  renderAll(); closeTxnModal();
+  showToast(createdCategory ? 'Category and entry saved' : 'Entry saved');
 }
 
 function deleteTxn(id){
@@ -945,7 +989,6 @@ document.addEventListener('DOMContentLoaded', () => {
   }catch(e){}
   showLogin();
 });
-
 </script>
 </body>
 </html>

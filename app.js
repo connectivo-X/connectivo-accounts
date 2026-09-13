@@ -154,7 +154,7 @@ function ledgerSide(t, isCr){
     <td class="date-c${isCr ? ' mid' : ''}">${fmtDate(t.date)}</td>
     <td class="head-acct"><div class="acct-line"><div><div>${esc(name)}</div>${note}</div>
       <span class="acts">
-        <button class="icon-btn" title="Edit" onclick="openTxnModal('${t.id}')">&#9998;</button>
+        <button class="icon-btn" title="Edit" onclick="openQuickEntry('${t.id}')">&#9998;</button>
         <button class="icon-btn danger" title="Delete" onclick="deleteTxn('${t.id}')">&#128465;</button>
       </span></div></td>
     <td class="small">${esc(t.ref || '')}</td>
@@ -377,17 +377,22 @@ function fillCatOptions(sel){
   let h = '';
   if(inc.length) h += '<optgroup label="Income (Dr.)">'  + inc.map(c => `<option value="${c.id}">${esc(c.name)}</option>`).join('') + '</optgroup>';
   if(exp.length) h += '<optgroup label="Expense (Cr.)">' + exp.map(c => `<option value="${c.id}">${esc(c.name)}</option>`).join('') + '</optgroup>';
+  h += '<option value="__new__">+ Create new category&hellip;</option>';
   el.innerHTML = h;
   if(sel) el.value = sel;
+  else if(!categories.length) el.value = '__new__';
+  onTxnCategoryChange();
+}
+function onTxnCategoryChange(){
+  const isNew = document.getElementById('txnCategory').value === '__new__';
+  document.getElementById('txnNewCatFields').style.display = isNew ? 'block' : 'none';
 }
 function defaultEntryDate(){
   const today = new Date();
   if(today.getFullYear() === cbYear && today.getMonth() === cbMonth) return today.toISOString().slice(0,10);
   return `${cbYear}-${String(cbMonth+1).padStart(2,'0')}-01`;
 }
-function openTxnModal(id){
-  if(!categories.length){ showToast('Add a category first — an entry needs one.'); switchTab('report'); return; }
-  fillCatOptions();
+function openQuickEntry(id){
   if(id){
     const t = transactions.find(x => x.id === id);
     document.getElementById('txnModalTitle').textContent = 'Edit entry';
@@ -400,8 +405,9 @@ function openTxnModal(id){
     document.getElementById('txnVc').value     = t.vcNo  || '';
     setRadio('txnPayType', t.paymentType);
   } else {
-    document.getElementById('txnModalTitle').textContent = 'New entry';
+    document.getElementById('txnModalTitle').textContent = 'Quick Entry';
     document.getElementById('txnId').value     = '';
+    fillCatOptions();
     document.getElementById('txnDate').value   = defaultEntryDate();
     document.getElementById('txnAmount').value = '';
     document.getElementById('txnDesc').value   = '';
@@ -409,13 +415,16 @@ function openTxnModal(id){
     document.getElementById('txnVc').value     = '';
     setRadio('txnPayType', 'cash');
   }
+  document.getElementById('txnNewCatName').value  = '';
+  document.getElementById('txnNewCatGroup').value = '';
+  setRadio('txnNewCatType', 'expense');
   document.getElementById('txnOverlay').classList.add('active');
 }
 function closeTxnModal(){ document.getElementById('txnOverlay').classList.remove('active'); }
 
 async function saveTxn(){
   const id          = document.getElementById('txnId').value;
-  const categoryId  = document.getElementById('txnCategory').value;
+  const categorySel = document.getElementById('txnCategory').value;
   const date        = document.getElementById('txnDate').value;
   const amount      = parseFloat(document.getElementById('txnAmount').value);
   const pay         = document.querySelector('#txnPayType input:checked');
@@ -423,10 +432,29 @@ async function saveTxn(){
   const ref         = document.getElementById('txnRef').value.trim();
   const vcNo        = document.getElementById('txnVc').value.trim();
 
-  if(!categoryId){ showToast('Choose a category.'); return; }
+  if(!categorySel){ showToast('Choose a category.'); return; }
+
+  let newCatName, newCatGroup, newCatType;
+  if(categorySel === '__new__'){
+    newCatName  = document.getElementById('txnNewCatName').value.trim();
+    newCatGroup = document.getElementById('txnNewCatGroup').value.trim();
+    newCatType  = document.querySelector('#txnNewCatType input:checked');
+    if(!newCatName){ showToast('Enter a name for the new category.'); return; }
+    if(!newCatType){ showToast('Choose income or expense for the new category.'); return; }
+  }
   if(!date){ showToast('Pick a date.'); return; }
   if(isNaN(amount) || amount <= 0){ showToast('Enter an amount greater than zero.'); return; }
   if(!pay){ showToast('Choose cash or bank.'); return; }
+
+  let categoryId = categorySel;
+  let createdCategory = false;
+  if(categorySel === '__new__'){
+    const newCat = { id: uid('cat'), name: newCatName, group: newCatGroup, type: newCatType.value };
+    categories.push(newCat);
+    await persistCategories();
+    categoryId = newCat.id;
+    createdCategory = true;
+  }
 
   if(id) Object.assign(transactions.find(x => x.id === id),
     { categoryId, date, amount, paymentType: pay.value, description, ref, vcNo });
@@ -435,7 +463,8 @@ async function saveTxn(){
   await persistTransactions();
   const [sy,sm] = date.split('-').map(Number);
   cbYear = sy; cbMonth = sm - 1;
-  renderAll(); closeTxnModal(); showToast('Entry saved');
+  renderAll(); closeTxnModal();
+  showToast(createdCategory ? 'Category and entry saved' : 'Entry saved');
 }
 
 function deleteTxn(id){
