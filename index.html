@@ -25,9 +25,8 @@
     background:linear-gradient(160deg,#EEF2EE 0%,#E2EAE4 100%)}
   .login-card{background:var(--paper);border:1px solid var(--rule-strong);border-radius:8px;
     box-shadow:0 12px 40px rgba(20,40,34,.12);width:100%;max-width:400px;padding:36px 34px 30px;text-align:center}
-  .logo-box{width:190px;height:88px;margin:0 auto 14px;border:1.5px solid var(--rule-strong);border-radius:var(--radius);
-    display:flex;align-items:center;justify-content:center;overflow:hidden;background:#FAFBFA}
-  .logo-box img{max-width:100%;max-height:100%;object-fit:contain}
+  .logo-box{width:auto;max-width:230px;height:auto;margin:0 auto 16px;display:flex;align-items:center;justify-content:center}
+  .logo-box img{max-width:100%;max-height:90px;object-fit:contain}
   .logo-box .ph{font-family:'Lora',serif;font-size:15px;color:var(--ink-soft);line-height:1.4}
   .login-sub{font-size:14px;color:var(--pine-dark);font-weight:600;margin-bottom:26px;font-family:'Lora',serif}
   .login-card .field{text-align:left;margin-bottom:16px}
@@ -47,9 +46,8 @@
   .app-header{background:var(--paper);border-bottom:2px solid var(--pine);padding:12px 22px;
     display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
   .hdr-left{display:flex;align-items:center;gap:14px}
-  .hdr-logo{width:150px;height:46px;border:1px solid var(--rule-strong);border-radius:var(--radius);
-    display:flex;align-items:center;justify-content:center;background:#FAFBFA;overflow:hidden;flex-shrink:0}
-  .hdr-logo img{max-width:100%;max-height:100%;object-fit:contain}
+  .hdr-logo{width:auto;height:44px;display:flex;align-items:center;flex-shrink:0}
+  .hdr-logo img{max-height:100%;width:auto;object-fit:contain}
   .hdr-logo .ph{font-family:'Lora',serif;font-size:12.5px;color:var(--ink-soft);text-align:center;line-height:1.2}
   .hdr-text{font-family:'Lora',serif;font-size:16px;color:var(--pine-dark);font-weight:600}
   .hdr-right{display:flex;align-items:center;gap:14px}
@@ -198,7 +196,7 @@
 <!-- ==================== LOGIN ==================== -->
 <div id="loginScreen">
   <div class="login-card">
-    <div class="logo-box" id="loginLogo"><div class="ph">Connectivo<br>logo</div></div>
+    <div class="logo-box" id="loginLogo"><img src="logo.png" alt="Connectivo"></div>
     <div class="login-sub">Connectivo Accounts and Cash Book</div>
 
     <div class="field">
@@ -222,7 +220,7 @@
 
   <header class="app-header">
     <div class="hdr-left">
-      <div class="hdr-logo" id="hdrLogo"><div class="ph">Connectivo<br>logo</div></div>
+      <div class="hdr-logo" id="hdrLogo"><img src="logo.png" alt="Connectivo"></div>
       <div class="hdr-text">Accounts and Cash Book</div>
     </div>
     <div class="hdr-right">
