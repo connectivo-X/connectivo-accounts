@@ -74,7 +74,15 @@ async function doLogin(){
   err.textContent = ''; btn.disabled = true; btn.textContent = 'Signing in…';
   const { data, error } = await sb.auth.signInWithPassword({ email, password: pass });
   btn.disabled = false; btn.textContent = 'Login';
-  if(error){ err.textContent = 'Email or password is not correct.'; return; }
+  if(error){
+    if(error.message.toLowerCase().includes('email not confirmed'))
+      err.textContent = 'This account is not confirmed yet. In Supabase, go to Authentication → Users, open this user, and confirm the email.';
+    else if(error.message.toLowerCase().includes('invalid login credentials'))
+      err.textContent = 'Email or password is not correct — or this user does not exist yet in Supabase.';
+    else
+      err.textContent = 'Could not sign in: ' + error.message;
+    return;
+  }
   await loadProfile(data.user);
   document.getElementById('loginPass').value = '';
   showApp();
