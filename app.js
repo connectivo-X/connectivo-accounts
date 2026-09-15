@@ -39,7 +39,11 @@ function esc(s){ return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&l
 function fmtMoney(n){ return (n<0?'-':'') + Math.abs(n).toLocaleString('en-US',{maximumFractionDigits:2}); }
 function fmtCell(n){ return n ? n.toLocaleString('en-US',{maximumFractionDigits:2}) : ''; }
 function cell(v){ return v ? v.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}) : ''; }
-function fmtDate(iso){ if(!iso) return ''; const [y,m,d]=iso.split('-'); return d+'.'+m+'.'+y; }
+function fmtDate(iso){
+  if(!iso) return '';
+  const [y,m,d] = iso.split('-').map(Number);
+  return String(d).padStart(2,'0') + '-' + MONTH_FULL[m-1] + '-' + y;
+}
 function catById(id){ return categories.find(c => c.id === id); }
 function daysInMonth(y,m){ return new Date(y, m+1, 0).getDate(); }
 
@@ -207,7 +211,7 @@ function renderLedger(){
 
   /* Balance B/D sits on the Dr. side of the first row */
   html += `<tr class="bd-row">
-    <td class="date-c">01.${String(cbMonth+1).padStart(2,'0')}.${cbYear}</td>
+    <td class="date-c">${fmtDate(`${cbYear}-${String(cbMonth+1).padStart(2,'0')}-01`)}</td>
     <td class="head-acct">Balance B/D</td><td></td><td></td>
     <td class="num">${cell(bd.cash)}</td><td class="num">${cell(bd.bank)}</td>
     ${payments[0] ? ledgerSide(payments[0], true) : BLANK_CR}</tr>`;
@@ -415,7 +419,7 @@ function openTxnModal(id){
     document.getElementById('txnDesc').value   = t.description || '';
     document.getElementById('txnRef').value    = t.ref   || '';
     document.getElementById('txnVc').value     = t.vcNo  || '';
-    setRadio('txnPayType', t.paymentType);
+    document.getElementById('txnPayType').value = t.paymentType;
   } else {
     document.getElementById('txnModalTitle').textContent = 'Add Entry';
     document.getElementById('txnId').value     = '';
@@ -424,7 +428,7 @@ function openTxnModal(id){
     document.getElementById('txnDesc').value   = '';
     document.getElementById('txnRef').value    = '';
     document.getElementById('txnVc').value     = '';
-    setRadio('txnPayType', 'cash');
+    document.getElementById('txnPayType').value = '';
   }
   document.getElementById('txnOverlay').classList.add('active');
 }
@@ -435,7 +439,7 @@ async function saveTxn(){
   let   categoryId  = document.getElementById('txnCategory').value;
   const date        = document.getElementById('txnDate').value;
   const amount      = parseFloat(document.getElementById('txnAmount').value);
-  const pay         = document.querySelector('#txnPayType input:checked');
+  const pay         = document.getElementById('txnPayType').value;
   const description = document.getElementById('txnDesc').value.trim();
   const ref         = document.getElementById('txnRef').value.trim();
   const vcNo        = document.getElementById('txnVc').value.trim();
@@ -460,7 +464,7 @@ async function saveTxn(){
     categoryId = newCat.id;
   }
 
-  const row = txnToDb({ categoryId, date, amount, paymentType: pay.value, description, ref, vcNo });
+  const row = txnToDb({ categoryId, date, amount, paymentType: pay, description, ref, vcNo });
 
   if(id){
     const { data, error } = await sb.from('transactions').update(row).eq('id', id).select().single();
