@@ -282,6 +282,8 @@
           <span id="cbFilterInputs"></span>
           <button class="btn btn-primary" style="padding:6px 14px" onclick="applyCbFilter()">Go</button>
           <button class="btn btn-ghost" style="padding:6px 14px" onclick="clearCbFilter()">Clear</button>
+          <span class="period-sep"></span>
+          <button class="btn btn-ghost" style="padding:6px 14px" onclick="openExportModal('cashbook')">Export</button>
           <span class="filter-status" id="cbFilterStatus"></span>
         </div>
 
@@ -324,6 +326,8 @@
           <span id="repFilterInputs"></span>
           <button class="btn btn-primary" style="padding:6px 14px" onclick="applyRepFilter()">Go</button>
           <button class="btn btn-ghost" style="padding:6px 14px" onclick="clearRepFilter()">Clear</button>
+          <span class="period-sep"></span>
+          <button class="btn btn-ghost" style="padding:6px 14px" onclick="openExportModal('report')">Export</button>
           <span class="filter-status" id="repFilterStatus"></span>
         </div>
 
@@ -438,9 +442,40 @@
   </div>
 </div>
 
+<!-- ===== Export modal ===== -->
+<div class="overlay" id="exportOverlay">
+  <div class="modal" style="max-width:380px">
+    <div class="modal-head"><h3>Export</h3><button class="close-x" onclick="closeExportModal()">&times;</button></div>
+    <div class="modal-body">
+      <input type="hidden" id="exportSource">
+      <div class="field">
+        <label>What to export</label>
+        <select id="exportScope">
+          <option value="current">Current view (what's on screen)</option>
+          <option value="whole">Whole report (everything)</option>
+        </select>
+      </div>
+      <div class="field" style="margin-bottom:0">
+        <label>Format</label>
+        <select id="exportFormat">
+          <option value="excel">Excel (.xlsx)</option>
+          <option value="pdf">PDF</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="closeExportModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="runExport()">Download</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 <script>
 /* ============================================================
    Connectivo — Supabase configuration
@@ -688,22 +723,24 @@ function ledgerSide(t, isCr){
 const BLANK_DR = '<td></td><td></td><td></td><td></td><td class="num"></td><td class="num"></td>';
 const BLANK_CR = '<td class="mid"></td><td></td><td></td><td></td><td class="num"></td><td class="num"></td>';
 
+function getLedgerData(year, month){
+  const bd       = openingBalance(year, month);
+  const receipts = monthTxns(year, month, 'income');
+  const payments = monthTxns(year, month, 'expense');
+  const drCash = bd.cash + receipts.filter(t => t.paymentType === 'cash').reduce((s,t) => s + t.amount, 0);
+  const drBank = bd.bank + receipts.filter(t => t.paymentType === 'bank').reduce((s,t) => s + t.amount, 0);
+  const crCash = payments.filter(t => t.paymentType === 'cash').reduce((s,t) => s + t.amount, 0);
+  const crBank = payments.filter(t => t.paymentType === 'bank').reduce((s,t) => s + t.amount, 0);
+  return { bd, receipts, payments, drCash, drBank, crCash, crBank, cdCash: drCash - crCash, cdBank: drBank - crBank };
+}
+
 function renderLedger(){
   document.getElementById('cbYearLabel').textContent = cbYear;
   document.querySelectorAll('.period-btn[data-cbmonth]').forEach(b =>
     b.classList.toggle('active', Number(b.dataset.cbmonth) === cbMonth));
   document.getElementById('cbMonthTitle').textContent = `Month Of ${MONTH_FULL[cbMonth]} _${cbYear}`;
 
-  const bd       = openingBalance(cbYear, cbMonth);
-  const receipts = monthTxns(cbYear, cbMonth, 'income');
-  const payments = monthTxns(cbYear, cbMonth, 'expense');
-
-  const drCash = bd.cash + receipts.filter(t => t.paymentType === 'cash').reduce((s,t) => s + t.amount, 0);
-  const drBank = bd.bank + receipts.filter(t => t.paymentType === 'bank').reduce((s,t) => s + t.amount, 0);
-  const crCash = payments.filter(t => t.paymentType === 'cash').reduce((s,t) => s + t.amount, 0);
-  const crBank = payments.filter(t => t.paymentType === 'bank').reduce((s,t) => s + t.amount, 0);
-  const cdCash = drCash - crCash;
-  const cdBank = drBank - crBank;
+  const { bd, receipts, payments, drCash, drBank, crCash, crBank, cdCash, cdBank } = getLedgerData(cbYear, cbMonth);
 
   const MIN_ROWS = 10;
   const rows = Math.max(receipts.length, payments.length, MIN_ROWS);
@@ -927,6 +964,189 @@ function updateReportTotals(isSummary){
   const net = document.getElementById('repNet');
   net.textContent = fmtMoney(inc - exp);
   net.style.color = (inc - exp) < 0 ? 'var(--expense)' : 'var(--income)';
+}
+
+/* ============================================================
+   EXPORT — Excel (.xlsx) and PDF, for both Cash Book and Expense Report
+   ============================================================ */
+function openExportModal(source){
+  document.getElementById('exportSource').value = source;
+  document.getElementById('exportOverlay').classList.add('active');
+}
+function closeExportModal(){ document.getElementById('exportOverlay').classList.remove('active'); }
+
+function runExport(){
+  const source = document.getElementById('exportSource').value;
+  const scope  = document.getElementById('exportScope').value;
+  const format = document.getElementById('exportFormat').value;
+  closeExportModal();
+  try{
+    if(source === 'cashbook'){
+      const months = scope === 'current' ? [{ year: cbYear, month: cbMonth }] : allMonthsWithData();
+      if(!months.length){ showToast('No entries to export yet.'); return; }
+      format === 'excel' ? exportCashBookExcel(months) : exportCashBookPdf(months);
+    } else {
+      const period = scope === 'current' ? reportPeriod : 'summary';
+      format === 'excel' ? exportReportExcel(reportYear, period) : exportReportPdf(reportYear, period);
+    }
+    showToast('Download started');
+  }catch(e){
+    showToast('Export failed: ' + e.message);
+  }
+}
+
+/* every {year, month} that has at least one transaction, oldest first */
+function allMonthsWithData(){
+  const set = new Set();
+  transactions.forEach(t => {
+    const [y,m] = t.date.split('-').map(Number);
+    set.add(y + '-' + (m - 1));
+  });
+  return [...set].map(s => { const [y,m] = s.split('-').map(Number); return { year: y, month: m }; })
+    .sort((a,b) => a.year - b.year || a.month - b.month);
+}
+function safeSheetName(name){
+  return name.replace(/[\\/*?:\[\]]/g, '-').slice(0, 31);
+}
+
+/* ---------- Cash Book: Excel ---------- */
+function ledgerRowsForSheet(year, month){
+  const { bd, receipts, payments, drCash, drBank, crCash, crBank, cdCash, cdBank } = getLedgerData(year, month);
+  const rows = [];
+  rows.push(['CONNECTIVO — Cash & Bank Book', '', '', '', '', '', '', '', '', '', '', '']);
+  rows.push(['Month Of ' + MONTH_FULL[month] + ' ' + year, '', '', '', '', '', '', '', '', '', '', '']);
+  rows.push([]);
+  rows.push(['Dr.', '', '', '', '', '', 'Cr.', '', '', '', '', '']);
+  rows.push(['Date','Received / Head Of Account','Ref','Vc No.','Cash','Bank','Date','Payment / Head Of Account','Ref','Vc No.','Cash','Bank']);
+
+  const firstDate = fmtDate(year + '-' + String(month + 1).padStart(2,'0') + '-01');
+  const sideRow = t => t
+    ? [fmtDate(t.date), catNameOf(t), t.ref||'', t.vcNo||'', t.paymentType==='cash'?t.amount:'', t.paymentType==='bank'?t.amount:'']
+    : ['','','','','',''];
+
+  /* Row 0: Balance B/D on the Dr side, first payment (if any) on the Cr side — same layout as the on-screen ledger */
+  rows.push([firstDate, 'Balance B/D', '', '', bd.cash || '', bd.bank || '', ...sideRow(payments[0])]);
+
+  const bodyRows = Math.max(receipts.length, payments.length - 1, 1);
+  for(let i = 0; i < bodyRows; i++){
+    rows.push([...sideRow(receipts[i]), ...sideRow(payments[i + 1])]);
+  }
+
+  rows.push(['','','','','','', '','Sub total','','', crCash, crBank]);
+  rows.push(['','','','','','', '','Balance C/D','','', cdCash, cdBank]);
+  rows.push(['','Total','','', drCash, drBank, '','Total','','', crCash + cdCash, crBank + cdBank]);
+  return rows;
+}
+function catNameOf(t){ const c = catById(t.categoryId); return c ? c.name : '(deleted category)'; }
+
+function exportCashBookExcel(months){
+  const wb = XLSX.utils.book_new();
+  months.forEach(({year, month}) => {
+    const ws = XLSX.utils.aoa_to_sheet(ledgerRowsForSheet(year, month));
+    ws['!cols'] = [{wch:12},{wch:26},{wch:8},{wch:8},{wch:11},{wch:11},{wch:12},{wch:26},{wch:8},{wch:8},{wch:11},{wch:11}];
+    XLSX.utils.book_append_sheet(wb, ws, safeSheetName(MONTHS[month] + ' ' + year));
+  });
+  const label = months.length === 1 ? MONTHS[months[0].month] + '-' + months[0].year : 'all-months';
+  XLSX.writeFile(wb, 'Connectivo-CashBook-' + label + '.xlsx');
+}
+
+/* ---------- Cash Book: PDF ---------- */
+function exportCashBookPdf(months){
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ orientation: 'landscape' });
+  months.forEach(({year, month}, idx) => {
+    if(idx > 0) doc.addPage();
+    const { bd, receipts, payments, drCash, drBank, crCash, crBank, cdCash, cdBank } = getLedgerData(year, month);
+    doc.setFontSize(14);
+    doc.text('CONNECTIVO — Cash & Bank Book', 14, 15);
+    doc.setFontSize(11);
+    doc.text('Month Of ' + MONTH_FULL[month] + ' ' + year, 14, 22);
+
+    const firstDate = fmtDate(year + '-' + String(month + 1).padStart(2,'0') + '-01');
+    const recBody = [[firstDate, 'Balance B/D', '', '', bd.cash ? cell(bd.cash) : '', bd.bank ? cell(bd.bank) : '']]
+      .concat(receipts.map(t => [fmtDate(t.date), catNameOf(t), t.ref||'', t.vcNo||'',
+        t.paymentType==='cash'?cell(t.amount):'', t.paymentType==='bank'?cell(t.amount):'']))
+      .concat([['', 'Total (Dr.)', '', '', cell(drCash), cell(drBank)]]);
+
+    const payBody = payments.map(t => [fmtDate(t.date), catNameOf(t), t.ref||'', t.vcNo||'',
+        t.paymentType==='cash'?cell(t.amount):'', t.paymentType==='bank'?cell(t.amount):''])
+      .concat([
+        ['', 'Sub total', '', '', cell(crCash), cell(crBank)],
+        ['', 'Balance C/D', '', '', cell(cdCash), cell(cdBank)],
+        ['', 'Total (Cr.)', '', '', cell(crCash + cdCash), cell(crBank + cdBank)],
+      ]);
+
+    doc.autoTable({
+      startY: 27, head: [['Date','Received / Head of Account','Ref','Vc No.','Cash','Bank']],
+      body: recBody, theme: 'grid', headStyles: { fillColor: [44,129,196] }, styles: { fontSize: 8 }
+    });
+    doc.autoTable({
+      startY: doc.lastAutoTable.finalY + 6, head: [['Date','Payment / Head of Account','Ref','Vc No.','Cash','Bank']],
+      body: payBody, theme: 'grid', headStyles: { fillColor: [44,129,196] }, styles: { fontSize: 8 }
+    });
+  });
+  const label = months.length === 1 ? MONTHS[months[0].month] + '-' + months[0].year : 'all-months';
+  doc.save('Connectivo-CashBook-' + label + '.pdf');
+}
+
+/* ---------- Expense Report: shared row builder ---------- */
+function reportRowsForExport(year, period){
+  const isSummary = period === 'summary';
+  const cols = isSummary
+    ? MONTHS.map((m,i) => ({ label:m, idx:i }))
+    : Array.from({ length: daysInMonth(year, period) }, (_,i) => ({ label:String(i+1), idx:i+1 }));
+  const val = (catId,c) => isSummary ? sumFor(catId, year, c.idx) : sumFor(catId, year, period, c.idx);
+
+  const header = ['Category', ...cols.map(c => c.label), isSummary ? 'YTD Total' : 'Total'];
+  const rows = [];
+  ['income','expense'].forEach(type => {
+    const groups = groupedCats(type);
+    const keys = Object.keys(groups).sort();
+    if(!keys.length) return;
+    rows.push([type === 'income' ? 'INCOME CATEGORY' : 'EXPENSE CATEGORY', ...cols.map(()=>'')," "]);
+    const typeTotals = cols.map(c => categories.filter(x => x.type === type).reduce((s,x) => s + val(x.id,c), 0));
+    rows.push(['Total ' + (type==='income'?'income':'expenses'), ...typeTotals.map(v=>v||''), typeTotals.reduce((a,b)=>a+b,0)]);
+    keys.forEach(g => {
+      const items = groups[g];
+      if(!(keys.length === 1 && g === 'Ungrouped')){
+        const gt = cols.map(c => items.reduce((s,x) => s + val(x.id,c), 0));
+        rows.push([g, ...gt.map(v=>v||''), gt.reduce((a,b)=>a+b,0)]);
+      }
+      items.forEach(cat => {
+        const vals = cols.map(c => val(cat.id, c));
+        rows.push([cat.name, ...vals.map(v=>v||''), vals.reduce((a,b)=>a+b,0)]);
+      });
+    });
+  });
+  return { header, rows, title: isSummary ? `Monthly Expense Report — ${year}` : `${MONTH_FULL[period]} ${year}` };
+}
+
+/* ---------- Expense Report: Excel ---------- */
+function exportReportExcel(year, period){
+  const { header, rows, title } = reportRowsForExport(year, period);
+  const aoa = [[title], [], header, ...rows];
+  const ws = XLSX.utils.aoa_to_sheet(aoa);
+  ws['!cols'] = [{wch:26}, ...header.slice(1).map(()=>({wch:10}))];
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, safeSheetName(period === 'summary' ? String(year) : MONTHS[period] + ' ' + year));
+  XLSX.writeFile(wb, 'Connectivo-ExpenseReport-' + (period==='summary' ? year : MONTHS[period]+'-'+year) + '.xlsx');
+}
+
+/* ---------- Expense Report: PDF ---------- */
+function exportReportPdf(year, period){
+  const { jsPDF } = window.jspdf;
+  const { header, rows, title } = reportRowsForExport(year, period);
+  const doc = new jsPDF({ orientation: 'landscape' });
+  doc.setFontSize(14);
+  doc.text('CONNECTIVO', 14, 15);
+  doc.setFontSize(11);
+  doc.text(title, 14, 22);
+  doc.autoTable({
+    startY: 27, head: [header], body: rows.map(r => r.map(v => typeof v === 'number' ? cell(v) : v)),
+    theme: 'grid', headStyles: { fillColor: [44,129,196] }, styles: { fontSize: 7 },
+    columnStyles: { 0: { cellWidth: 42 } }
+  });
+  doc.save('Connectivo-ExpenseReport-' + (period==='summary' ? year : MONTHS[period]+'-'+year) + '.pdf');
 }
 
 /* ============================================================

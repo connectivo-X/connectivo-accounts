@@ -282,6 +282,8 @@
           <span id="cbFilterInputs"></span>
           <button class="btn btn-primary" style="padding:6px 14px" onclick="applyCbFilter()">Go</button>
           <button class="btn btn-ghost" style="padding:6px 14px" onclick="clearCbFilter()">Clear</button>
+          <span class="period-sep"></span>
+          <button class="btn btn-ghost" style="padding:6px 14px" onclick="openExportModal('cashbook')">Export</button>
           <span class="filter-status" id="cbFilterStatus"></span>
         </div>
 
@@ -324,6 +326,8 @@
           <span id="repFilterInputs"></span>
           <button class="btn btn-primary" style="padding:6px 14px" onclick="applyRepFilter()">Go</button>
           <button class="btn btn-ghost" style="padding:6px 14px" onclick="clearRepFilter()">Clear</button>
+          <span class="period-sep"></span>
+          <button class="btn btn-ghost" style="padding:6px 14px" onclick="openExportModal('report')">Export</button>
           <span class="filter-status" id="repFilterStatus"></span>
         </div>
 
@@ -438,9 +442,40 @@
   </div>
 </div>
 
+<!-- ===== Export modal ===== -->
+<div class="overlay" id="exportOverlay">
+  <div class="modal" style="max-width:380px">
+    <div class="modal-head"><h3>Export</h3><button class="close-x" onclick="closeExportModal()">&times;</button></div>
+    <div class="modal-body">
+      <input type="hidden" id="exportSource">
+      <div class="field">
+        <label>What to export</label>
+        <select id="exportScope">
+          <option value="current">Current view (what's on screen)</option>
+          <option value="whole">Whole report (everything)</option>
+        </select>
+      </div>
+      <div class="field" style="margin-bottom:0">
+        <label>Format</label>
+        <select id="exportFormat">
+          <option value="excel">Excel (.xlsx)</option>
+          <option value="pdf">PDF</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="closeExportModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="runExport()">Download</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 <script src="config.js"></script>
 <script src="app.js"></script>
 </body>
