@@ -129,12 +129,64 @@ function buildCbMonthButtons(){
   document.getElementById('cbMonthBtns').innerHTML = MONTHS.map((m,i) =>
     `<button class="period-btn" data-cbmonth="${i}" onclick="setCbMonth(${i})">${m}</button>`).join(' ');
 }
-function setCbMonth(m){ cbMonth = m; renderLedger(); }
+function setCbMonth(m){ cbMonth = m; renderLedger(); const s=document.getElementById('cbFilterStatus'); if(s) s.textContent=''; }
 function changeCbMonth(d){
   cbMonth += d;
   if(cbMonth < 0){ cbMonth = 11; cbYear--; }
   if(cbMonth > 11){ cbMonth = 0; cbYear++; }
   renderLedger();
+  const s=document.getElementById('cbFilterStatus'); if(s) s.textContent='';
+}
+
+/* ===== Cash Book filter bar ===== */
+function buildCbFilterInputs(){
+  const type = document.getElementById('cbFilterType').value;
+  const el = document.getElementById('cbFilterInputs');
+  const todayIso = new Date().toISOString().slice(0,10);
+  if(type === 'day'){
+    el.innerHTML = `<input type="date" id="cbFilterDate" value="${todayIso}">`;
+  } else if(type === 'month'){
+    el.innerHTML = `<select id="cbFilterMonth">${MONTHS.map((m,i) => `<option value="${i}">${m}</option>`).join('')}</select>
+      <input type="number" id="cbFilterYear" value="${cbYear}" placeholder="Year">`;
+  } else {
+    el.innerHTML = `<input type="number" id="cbFilterYearOnly" value="${cbYear}" placeholder="Year">`;
+  }
+}
+function applyCbFilter(){
+  const type = document.getElementById('cbFilterType').value;
+  const status = document.getElementById('cbFilterStatus');
+  document.querySelectorAll('#ledgerHost tr.highlight-row').forEach(r => r.classList.remove('highlight-row'));
+
+  if(type === 'year'){
+    const y = parseInt(document.getElementById('cbFilterYearOnly').value, 10);
+    if(!y){ showToast('Enter a year.'); return; }
+    cbYear = y; renderLedger();
+    status.textContent = `Showing ${cbYear}, ${MONTH_FULL[cbMonth]}`;
+  } else if(type === 'month'){
+    const m = parseInt(document.getElementById('cbFilterMonth').value, 10);
+    const y = parseInt(document.getElementById('cbFilterYear').value, 10);
+    if(!y){ showToast('Enter a year.'); return; }
+    cbYear = y; cbMonth = m; renderLedger();
+    status.textContent = `Showing ${MONTH_FULL[cbMonth]} ${cbYear}`;
+  } else {
+    const iso = document.getElementById('cbFilterDate').value;
+    if(!iso){ showToast('Pick a date.'); return; }
+    const [y,m] = iso.split('-').map(Number);
+    cbYear = y; cbMonth = m - 1;
+    renderLedger();
+    const matches = document.querySelectorAll(`#ledgerHost td.date-c[data-date="${iso}"]`);
+    if(matches.length){
+      matches.forEach(td => td.closest('tr').classList.add('highlight-row'));
+      matches[0].closest('tr').scrollIntoView({ behavior:'smooth', block:'center' });
+      status.textContent = `Found ${matches.length} entr${matches.length===1?'y':'ies'} on ${fmtDate(iso)}`;
+    } else {
+      status.textContent = `No entries on ${fmtDate(iso)}`;
+    }
+  }
+}
+function clearCbFilter(){
+  document.querySelectorAll('#ledgerHost tr.highlight-row').forEach(r => r.classList.remove('highlight-row'));
+  document.getElementById('cbFilterStatus').textContent = '';
 }
 
 /* Opening balance = every transaction dated before this month */
@@ -163,7 +215,7 @@ function ledgerSide(t, isCr){
   const name = c ? c.name : '(deleted category)';
   const note = t.description ? `<div class="acct-note">${esc(t.description)}</div>` : '';
   return `
-    <td class="date-c${isCr ? ' mid' : ''}">${fmtDate(t.date)}</td>
+    <td class="date-c${isCr ? ' mid' : ''}" data-date="${t.date}">${fmtDate(t.date)}</td>
     <td class="head-acct"><div class="acct-line"><div><div>${esc(name)}</div>${note}</div>
       <span class="acts">
         <button class="icon-btn" title="Edit" onclick="openTxnModal('${t.id}')">&#9998;</button>
@@ -258,8 +310,61 @@ function setPeriod(p){
   document.querySelectorAll('.period-btn[data-period]').forEach(b =>
     b.classList.toggle('active', String(b.dataset.period) === String(p)));
   renderReport();
+  const s=document.getElementById('repFilterStatus'); if(s) s.textContent='';
 }
-function changeYear(d){ reportYear += d; renderReport(); }
+function changeYear(d){ reportYear += d; renderReport(); const s=document.getElementById('repFilterStatus'); if(s) s.textContent=''; }
+
+/* ===== Expense Report filter bar ===== */
+function buildRepFilterInputs(){
+  const type = document.getElementById('repFilterType').value;
+  const el = document.getElementById('repFilterInputs');
+  const todayIso = new Date().toISOString().slice(0,10);
+  if(type === 'day'){
+    el.innerHTML = `<input type="date" id="repFilterDate" value="${todayIso}">`;
+  } else if(type === 'month'){
+    el.innerHTML = `<select id="repFilterMonth">${MONTHS.map((m,i) => `<option value="${i}">${m}</option>`).join('')}</select>
+      <input type="number" id="repFilterYear" value="${reportYear}" placeholder="Year">`;
+  } else {
+    el.innerHTML = `<input type="number" id="repFilterYearOnly" value="${reportYear}" placeholder="Year">`;
+  }
+}
+function applyRepFilter(){
+  const type = document.getElementById('repFilterType').value;
+  const status = document.getElementById('repFilterStatus');
+  document.querySelectorAll('#gridHost .highlight-cell').forEach(c => c.classList.remove('highlight-cell'));
+
+  if(type === 'year'){
+    const y = parseInt(document.getElementById('repFilterYearOnly').value, 10);
+    if(!y){ showToast('Enter a year.'); return; }
+    reportYear = y; setPeriod('summary');
+    status.textContent = `Showing year ${reportYear}`;
+  } else if(type === 'month'){
+    const m = parseInt(document.getElementById('repFilterMonth').value, 10);
+    const y = parseInt(document.getElementById('repFilterYear').value, 10);
+    if(!y){ showToast('Enter a year.'); return; }
+    reportYear = y; setPeriod(m);
+    status.textContent = `Showing ${MONTH_FULL[m]} ${reportYear}`;
+  } else {
+    const iso = document.getElementById('repFilterDate').value;
+    if(!iso){ showToast('Pick a date.'); return; }
+    const [y,m,d] = iso.split('-').map(Number);
+    reportYear = y; setPeriod(m - 1);
+    const cells = document.querySelectorAll(`#gridHost td[data-day="${d}"], #gridHost th[data-day="${d}"]`);
+    let dayInc = 0, dayExp = 0;
+    categories.forEach(c => {
+      const v = sumFor(c.id, reportYear, m - 1, d);
+      if(c.type === 'income') dayInc += v; else dayExp += v;
+    });
+    cells.forEach(c => c.classList.add('highlight-cell'));
+    status.textContent = (dayInc || dayExp)
+      ? `${fmtDate(iso)} — Income ${fmtMoney(dayInc)} · Expense ${fmtMoney(dayExp)}`
+      : `No entries on ${fmtDate(iso)}`;
+  }
+}
+function clearRepFilter(){
+  document.querySelectorAll('#gridHost .highlight-cell').forEach(c => c.classList.remove('highlight-cell'));
+  document.getElementById('repFilterStatus').textContent = '';
+}
 
 function sumFor(catId, year, month, day){
   return transactions.reduce((acc,t) => {
@@ -304,7 +409,7 @@ function renderReport(){
     : sumFor(catId, reportYear, reportPeriod, c.idx);
 
   let html = '<table class="grid"><thead><tr><th class="cat-col">CATEGORY</th>' +
-    cols.map(c => `<th>${c.label}</th>`).join('') +
+    cols.map(c => `<th${isSummary ? '' : ` data-day="${c.idx}"`}>${c.label}</th>`).join('') +
     `<th>${isSummary ? 'YTD TOTAL' : 'TOTAL'}</th></tr></thead><tbody>`;
 
   ['income','expense'].forEach(type => {
@@ -335,7 +440,7 @@ function renderReport(){
             <button class="icon-btn" title="Edit" onclick="openCatModal('${cat.id}')">&#9998;</button>
             <button class="icon-btn danger" title="Delete" onclick="deleteCat('${cat.id}')">&#128465;</button>
           </span></div></td>` +
-          vals.map(v => `<td class="${v ? '' : 'zero'}">${fmtCell(v)}</td>`).join('') +
+          vals.map((v,i) => `<td class="${v ? '' : 'zero'}"${isSummary ? '' : ` data-day="${cols[i].idx}"`}>${fmtCell(v)}</td>`).join('') +
           `<td class="total-col">${fmtCell(vals.reduce((a,b) => a+b, 0))}</td></tr>`;
       });
     });
@@ -612,6 +717,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   buildMonthButtons();
   buildCbMonthButtons();
+  buildCbFilterInputs();
+  buildRepFilterInputs();
 
   /* restore session if the tab was only refreshed — Supabase keeps this in its own storage */
   const { data } = await sb.auth.getSession();

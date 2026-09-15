@@ -107,6 +107,16 @@
   .icon-btn:hover{background:#EEF2EE;color:var(--ink)}
   .icon-btn.danger:hover{color:var(--expense)}
 
+  .filter-bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:14px;padding:10px 12px;
+    background:#FAFBFA;border:1px solid var(--rule-strong);border-radius:var(--radius)}
+  .filter-label{font-size:12.5px;font-weight:700;color:var(--ink);margin-right:2px}
+  .filter-bar select,.filter-bar input{padding:6px 9px;border:1px solid var(--rule-strong);border-radius:var(--radius);
+    font-family:inherit;font-size:13px;background:#fff;color:var(--ink)}
+  .filter-bar input[type=number]{width:80px}
+  .filter-status{font-size:12.5px;color:var(--ink);font-style:italic}
+  tr.highlight-row td{background:#FFF3B0!important}
+  td.highlight-cell{background:#FFF3B0!important;font-weight:700}
+
   .period-bar{display:flex;gap:3px;flex-wrap:wrap;margin-bottom:16px;border-bottom:1px solid var(--rule);
     padding-bottom:12px;align-items:center}
   .period-btn{font-size:12.5px;font-weight:600;padding:6px 11px;border:1px solid var(--rule-strong);
@@ -262,6 +272,19 @@
           <div class="head-actions"><button class="btn btn-gold" onclick="openTxnModal()">+ New Entry</button></div>
         </div>
 
+        <div class="filter-bar">
+          <span class="filter-label">Filter by:</span>
+          <select id="cbFilterType" onchange="buildCbFilterInputs()">
+            <option value="day">Day</option>
+            <option value="month">Month</option>
+            <option value="year">Year</option>
+          </select>
+          <span id="cbFilterInputs"></span>
+          <button class="btn btn-primary" style="padding:6px 14px" onclick="applyCbFilter()">Go</button>
+          <button class="btn btn-ghost" style="padding:6px 14px" onclick="clearCbFilter()">Clear</button>
+          <span class="filter-status" id="cbFilterStatus"></span>
+        </div>
+
         <div class="period-bar">
           <span class="year-label" id="cbYearLabel">2026</span>
           <button class="period-btn" onclick="changeCbMonth(-1)">&lsaquo; Prev</button>
@@ -289,6 +312,19 @@
       <div class="tab-panel" id="panel-report">
         <div class="section-head">
           <h2>Monthly Expense Report</h2>
+        </div>
+
+        <div class="filter-bar">
+          <span class="filter-label">Filter by:</span>
+          <select id="repFilterType" onchange="buildRepFilterInputs()">
+            <option value="day">Day</option>
+            <option value="month">Month</option>
+            <option value="year">Year</option>
+          </select>
+          <span id="repFilterInputs"></span>
+          <button class="btn btn-primary" style="padding:6px 14px" onclick="applyRepFilter()">Go</button>
+          <button class="btn btn-ghost" style="padding:6px 14px" onclick="clearRepFilter()">Clear</button>
+          <span class="filter-status" id="repFilterStatus"></span>
         </div>
 
         <div class="report-top">
