@@ -385,8 +385,14 @@ function fillCatOptions(sel){
   let h = '';
   if(inc.length) h += '<optgroup label="Income (Dr.)">'  + inc.map(c => `<option value="${c.id}">${esc(c.name)}</option>`).join('') + '</optgroup>';
   if(exp.length) h += '<optgroup label="Expense (Cr.)">' + exp.map(c => `<option value="${c.id}">${esc(c.name)}</option>`).join('') + '</optgroup>';
+  h += '<option value="__new__">+ Add new category…</option>';
   el.innerHTML = h;
-  if(sel) el.value = sel;
+  el.value = sel || (categories.length ? categories[0].id : '__new__');
+  handleTxnCategoryChange();
+}
+function handleTxnCategoryChange(){
+  const isNew = document.getElementById('txnCategory').value === '__new__';
+  document.getElementById('inlineNewCat').style.display = isNew ? 'block' : 'none';
 }
 function defaultEntryDate(){
   const today = new Date();
@@ -394,11 +400,14 @@ function defaultEntryDate(){
   return `${cbYear}-${String(cbMonth+1).padStart(2,'0')}-01`;
 }
 function openTxnModal(id){
-  if(!categories.length){ showToast('Add a category first — an entry needs one.'); switchTab('report'); return; }
+  refreshGroupList();
   fillCatOptions();
+  document.getElementById('newCatName').value  = '';
+  document.getElementById('newCatType').value  = '';
+  document.getElementById('newCatGroup').value = '';
   if(id){
     const t = transactions.find(x => x.id === id);
-    document.getElementById('txnModalTitle').textContent = 'Edit entry';
+    document.getElementById('txnModalTitle').textContent = 'Edit Entry';
     document.getElementById('txnId').value = t.id;
     fillCatOptions(t.categoryId);
     document.getElementById('txnDate').value   = t.date;
@@ -408,7 +417,7 @@ function openTxnModal(id){
     document.getElementById('txnVc').value     = t.vcNo  || '';
     setRadio('txnPayType', t.paymentType);
   } else {
-    document.getElementById('txnModalTitle').textContent = 'New entry';
+    document.getElementById('txnModalTitle').textContent = 'Add Entry';
     document.getElementById('txnId').value     = '';
     document.getElementById('txnDate').value   = defaultEntryDate();
     document.getElementById('txnAmount').value = '';
@@ -423,7 +432,7 @@ function closeTxnModal(){ document.getElementById('txnOverlay').classList.remove
 
 async function saveTxn(){
   const id          = document.getElementById('txnId').value;
-  const categoryId  = document.getElementById('txnCategory').value;
+  let   categoryId  = document.getElementById('txnCategory').value;
   const date        = document.getElementById('txnDate').value;
   const amount      = parseFloat(document.getElementById('txnAmount').value);
   const pay         = document.querySelector('#txnPayType input:checked');
@@ -435,6 +444,21 @@ async function saveTxn(){
   if(!date){ showToast('Pick a date.'); return; }
   if(isNaN(amount) || amount <= 0){ showToast('Enter an amount greater than zero.'); return; }
   if(!pay){ showToast('Choose cash or bank.'); return; }
+
+  /* Combined flow: create the category first if "+ Add new category…" was chosen */
+  if(categoryId === '__new__'){
+    const newName  = document.getElementById('newCatName').value.trim();
+    const newType  = document.getElementById('newCatType').value;
+    const newGroup = document.getElementById('newCatGroup').value.trim();
+    if(!newName){ showToast('Enter a name for the new category.'); return; }
+    if(!newType){ showToast('Select a type (Income or Expense) for the new category.'); return; }
+    const { data: catData, error: catError } = await sb.from('categories')
+      .insert(catToDb({ name: newName, group: newGroup, type: newType })).select().single();
+    if(catError){ showToast('Could not create the category: ' + catError.message); return; }
+    const newCat = catFromDb(catData);
+    categories.push(newCat);
+    categoryId = newCat.id;
+  }
 
   const row = txnToDb({ categoryId, date, amount, paymentType: pay.value, description, ref, vcNo });
 
@@ -479,13 +503,13 @@ function openCatModal(id){
     document.getElementById('catId').value    = c.id;
     document.getElementById('catName').value  = c.name;
     document.getElementById('catGroup').value = c.group || '';
-    setRadio('catType', c.type);
+    document.getElementById('catType').value  = c.type;
   } else {
     document.getElementById('catModalTitle').textContent = 'Add category';
     document.getElementById('catId').value    = '';
     document.getElementById('catName').value  = '';
     document.getElementById('catGroup').value = '';
-    setRadio('catType', 'expense');
+    document.getElementById('catType').value  = '';
   }
   document.getElementById('catOverlay').classList.add('active');
 }
@@ -495,10 +519,10 @@ async function saveCat(){
   const id    = document.getElementById('catId').value;
   const name  = document.getElementById('catName').value.trim();
   const group = document.getElementById('catGroup').value.trim();
-  const ty    = document.querySelector('#catType input:checked');
+  const ty    = document.getElementById('catType').value;
   if(!name){ showToast('Enter a category name.'); return; }
-  if(!ty){ showToast('Choose income or expense.'); return; }
-  const row = catToDb({ name, group, type: ty.value });
+  if(!ty){ showToast('Select a type — Income or Expense.'); return; }
+  const row = catToDb({ name, group, type: ty });
   if(id){
     const { data, error } = await sb.from('categories').update(row).eq('id', id).select().single();
     if(error){ showToast('Could not save the category: ' + error.message); return; }
