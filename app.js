@@ -193,7 +193,7 @@ function renderLedger(){
   document.getElementById('cbYearLabel').textContent = cbYear;
   document.querySelectorAll('.period-btn[data-cbmonth]').forEach(b =>
     b.classList.toggle('active', Number(b.dataset.cbmonth) === cbMonth));
-  document.getElementById('cbMonthTitle').textContent = `Month Of ${MONTH_FULL[cbMonth]} _${cbYear}`;
+  document.getElementById('cbMonthTitle').textContent = `Month Of ${MONTH_FULL[cbMonth]} - ${cbYear}`;
 
   const { bd, receipts, payments, drCash, drBank, crCash, crBank, cdCash, cdBank } = getLedgerData(cbYear, cbMonth);
 
@@ -564,7 +564,7 @@ function ledgerRowsForSheet(year, month){
   const { bd, receipts, payments, drCash, drBank, crCash, crBank, cdCash, cdBank } = getLedgerData(year, month);
   const rows = [];
   rows.push(['CONNECTIVO — Cash & Bank Book', '', '', '', '', '', '', '', '', '', '', '']);
-  rows.push(['Month Of ' + MONTH_FULL[month] + ' ' + year, '', '', '', '', '', '', '', '', '', '', '']);
+  rows.push(['Month Of ' + MONTH_FULL[month] + ' - ' + year, '', '', '', '', '', '', '', '', '', '', '']);
   rows.push([]);
   rows.push(['Dr.', '', '', '', '', '', 'Cr.', '', '', '', '', '']);
   rows.push(['Date','Received / Head Of Account','Ref','Vc No.','Cash','Bank','Date','Payment / Head Of Account','Ref','Vc No.','Cash','Bank']);
@@ -610,7 +610,7 @@ function exportCashBookPdf(months){
     doc.setFontSize(14);
     doc.text('CONNECTIVO — Cash & Bank Book', 14, 15);
     doc.setFontSize(11);
-    doc.text('Month Of ' + MONTH_FULL[month] + ' ' + year, 14, 22);
+    doc.text('Month Of ' + MONTH_FULL[month] + ' - ' + year, 14, 22);
 
     const firstDate = fmtDate(year + '-' + String(month + 1).padStart(2,'0') + '-01');
     const recBody = [[firstDate, 'Balance B/D', '', '', bd.cash ? cell(bd.cash) : '', bd.bank ? cell(bd.bank) : '']]
