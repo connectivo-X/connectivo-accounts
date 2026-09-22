@@ -140,7 +140,7 @@
   table.ledger{border-collapse:collapse;width:100%;font-size:12.5px;min-width:900px}
   table.ledger th,table.ledger td{border:1px solid var(--rule-strong);padding:5px 7px;vertical-align:middle;color:var(--ink)}
   table.ledger .drcr th{background:var(--menu);color:#fff;font-family:'Lora',serif;font-size:14.5px;
-    letter-spacing:.4px;text-align:left;padding:8px 9px;border-color:var(--menu)}
+    letter-spacing:.4px;text-align:center;padding:8px 9px;border-color:var(--menu)}
   table.ledger .drcr th.cr-side{border-left:3px solid #fff}
   table.ledger thead th{background:var(--header-cell);color:var(--ink);font-size:11px;font-weight:600;text-align:center;white-space:nowrap}
   table.ledger tr.sub-head th{background:#DCEAF3;color:var(--ink);font-size:10.5px;font-weight:600}
@@ -619,6 +619,7 @@ const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 
 const MONTHS      = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
 const MONTH_FULL  = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+const MONTHS_SHORT = MONTHS.map(m => m.charAt(0) + m.slice(1).toLowerCase());
 let categories = [];
 let transactions = [];
 let currentUser = null;   // { id, email, name, role }
@@ -656,7 +657,7 @@ function cell(v){ return v ? v.toLocaleString('en-US',{minimumFractionDigits:2,m
 function fmtDate(iso){
   if(!iso) return '';
   const [y,m,d] = iso.split('-').map(Number);
-  return String(d).padStart(2,'0') + '-' + MONTH_FULL[m-1] + '-' + y;
+  return String(d).padStart(2,'0') + '-' + MONTHS_SHORT[m-1] + '-' + y;
 }
 function catById(id){ return categories.find(c => c.id === id); }
 function daysInMonth(y,m){ return new Date(y, m+1, 0).getDate(); }
@@ -1274,7 +1275,6 @@ function exportReportPdf(year, period){
    ============================================================ */
 
 /* ---------- Add Cash In / Cash Out side panel ---------- */
-const MONTHS_SHORT = MONTHS.map(m => m.charAt(0) + m.slice(1).toLowerCase());
 let catSearchPool = [];
 let dpViewYear, dpViewMonth;
 

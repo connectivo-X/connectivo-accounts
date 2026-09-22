@@ -5,6 +5,7 @@
 
 const MONTHS      = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
 const MONTH_FULL  = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+const MONTHS_SHORT = MONTHS.map(m => m.charAt(0) + m.slice(1).toLowerCase());
 let categories = [];
 let transactions = [];
 let currentUser = null;   // { id, email, name, role }
@@ -42,7 +43,7 @@ function cell(v){ return v ? v.toLocaleString('en-US',{minimumFractionDigits:2,m
 function fmtDate(iso){
   if(!iso) return '';
   const [y,m,d] = iso.split('-').map(Number);
-  return String(d).padStart(2,'0') + '-' + MONTH_FULL[m-1] + '-' + y;
+  return String(d).padStart(2,'0') + '-' + MONTHS_SHORT[m-1] + '-' + y;
 }
 function catById(id){ return categories.find(c => c.id === id); }
 function daysInMonth(y,m){ return new Date(y, m+1, 0).getDate(); }
@@ -660,7 +661,6 @@ function exportReportPdf(year, period){
    ============================================================ */
 
 /* ---------- Add Cash In / Cash Out side panel ---------- */
-const MONTHS_SHORT = MONTHS.map(m => m.charAt(0) + m.slice(1).toLowerCase());
 let catSearchPool = [];
 let dpViewYear, dpViewMonth;
 
