@@ -121,7 +121,7 @@ function switchTab(t){
   document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
   document.getElementById('panel-' + t).classList.add('active');
 }
-function renderAll(){ renderLedger(); renderReport(); refreshGroupList(); }
+function renderAll(){ renderLedger(); renderReport(); refreshGroupList(); refreshFilterCategoryOptions(); }
 
 /* ============================================================
    CASH BOOK — Dr. / Cr. ledger
@@ -130,64 +130,12 @@ function buildCbMonthButtons(){
   document.getElementById('cbMonthBtns').innerHTML = MONTHS.map((m,i) =>
     `<button class="period-btn" data-cbmonth="${i}" onclick="setCbMonth(${i})">${m}</button>`).join(' ');
 }
-function setCbMonth(m){ cbMonth = m; renderLedger(); const s=document.getElementById('cbFilterStatus'); if(s) s.textContent=''; }
+function setCbMonth(m){ cbMonth = m; renderLedger(); }
 function changeCbMonth(d){
   cbMonth += d;
   if(cbMonth < 0){ cbMonth = 11; cbYear--; }
   if(cbMonth > 11){ cbMonth = 0; cbYear++; }
   renderLedger();
-  const s=document.getElementById('cbFilterStatus'); if(s) s.textContent='';
-}
-
-/* ===== Cash Book filter bar ===== */
-function buildCbFilterInputs(){
-  const type = document.getElementById('cbFilterType').value;
-  const el = document.getElementById('cbFilterInputs');
-  const todayIso = new Date().toISOString().slice(0,10);
-  if(type === 'day'){
-    el.innerHTML = `<input type="date" id="cbFilterDate" value="${todayIso}">`;
-  } else if(type === 'month'){
-    el.innerHTML = `<select id="cbFilterMonth">${MONTHS.map((m,i) => `<option value="${i}">${m}</option>`).join('')}</select>
-      <input type="number" id="cbFilterYear" value="${cbYear}" placeholder="Year">`;
-  } else {
-    el.innerHTML = `<input type="number" id="cbFilterYearOnly" value="${cbYear}" placeholder="Year">`;
-  }
-}
-function applyCbFilter(){
-  const type = document.getElementById('cbFilterType').value;
-  const status = document.getElementById('cbFilterStatus');
-  document.querySelectorAll('#ledgerHost tr.highlight-row').forEach(r => r.classList.remove('highlight-row'));
-
-  if(type === 'year'){
-    const y = parseInt(document.getElementById('cbFilterYearOnly').value, 10);
-    if(!y){ showToast('Enter a year.'); return; }
-    cbYear = y; renderLedger();
-    status.textContent = `Showing ${cbYear}, ${MONTH_FULL[cbMonth]}`;
-  } else if(type === 'month'){
-    const m = parseInt(document.getElementById('cbFilterMonth').value, 10);
-    const y = parseInt(document.getElementById('cbFilterYear').value, 10);
-    if(!y){ showToast('Enter a year.'); return; }
-    cbYear = y; cbMonth = m; renderLedger();
-    status.textContent = `Showing ${MONTH_FULL[cbMonth]} ${cbYear}`;
-  } else {
-    const iso = document.getElementById('cbFilterDate').value;
-    if(!iso){ showToast('Pick a date.'); return; }
-    const [y,m] = iso.split('-').map(Number);
-    cbYear = y; cbMonth = m - 1;
-    renderLedger();
-    const matches = document.querySelectorAll(`#ledgerHost td.date-c[data-date="${iso}"]`);
-    if(matches.length){
-      matches.forEach(td => td.closest('tr').classList.add('highlight-row'));
-      matches[0].closest('tr').scrollIntoView({ behavior:'smooth', block:'center' });
-      status.textContent = `Found ${matches.length} entr${matches.length===1?'y':'ies'} on ${fmtDate(iso)}`;
-    } else {
-      status.textContent = `No entries on ${fmtDate(iso)}`;
-    }
-  }
-}
-function clearCbFilter(){
-  document.querySelectorAll('#ledgerHost tr.highlight-row').forEach(r => r.classList.remove('highlight-row'));
-  document.getElementById('cbFilterStatus').textContent = '';
 }
 
 /* Opening balance = every transaction dated before this month */
@@ -316,61 +264,8 @@ function setPeriod(p){
   document.querySelectorAll('.period-btn[data-period]').forEach(b =>
     b.classList.toggle('active', String(b.dataset.period) === String(p)));
   renderReport();
-  const s=document.getElementById('repFilterStatus'); if(s) s.textContent='';
 }
-function changeYear(d){ reportYear += d; renderReport(); const s=document.getElementById('repFilterStatus'); if(s) s.textContent=''; }
-
-/* ===== Expense Report filter bar ===== */
-function buildRepFilterInputs(){
-  const type = document.getElementById('repFilterType').value;
-  const el = document.getElementById('repFilterInputs');
-  const todayIso = new Date().toISOString().slice(0,10);
-  if(type === 'day'){
-    el.innerHTML = `<input type="date" id="repFilterDate" value="${todayIso}">`;
-  } else if(type === 'month'){
-    el.innerHTML = `<select id="repFilterMonth">${MONTHS.map((m,i) => `<option value="${i}">${m}</option>`).join('')}</select>
-      <input type="number" id="repFilterYear" value="${reportYear}" placeholder="Year">`;
-  } else {
-    el.innerHTML = `<input type="number" id="repFilterYearOnly" value="${reportYear}" placeholder="Year">`;
-  }
-}
-function applyRepFilter(){
-  const type = document.getElementById('repFilterType').value;
-  const status = document.getElementById('repFilterStatus');
-  document.querySelectorAll('#gridHost .highlight-cell').forEach(c => c.classList.remove('highlight-cell'));
-
-  if(type === 'year'){
-    const y = parseInt(document.getElementById('repFilterYearOnly').value, 10);
-    if(!y){ showToast('Enter a year.'); return; }
-    reportYear = y; setPeriod('summary');
-    status.textContent = `Showing year ${reportYear}`;
-  } else if(type === 'month'){
-    const m = parseInt(document.getElementById('repFilterMonth').value, 10);
-    const y = parseInt(document.getElementById('repFilterYear').value, 10);
-    if(!y){ showToast('Enter a year.'); return; }
-    reportYear = y; setPeriod(m);
-    status.textContent = `Showing ${MONTH_FULL[m]} ${reportYear}`;
-  } else {
-    const iso = document.getElementById('repFilterDate').value;
-    if(!iso){ showToast('Pick a date.'); return; }
-    const [y,m,d] = iso.split('-').map(Number);
-    reportYear = y; setPeriod(m - 1);
-    const cells = document.querySelectorAll(`#gridHost td[data-day="${d}"], #gridHost th[data-day="${d}"]`);
-    let dayInc = 0, dayExp = 0;
-    categories.forEach(c => {
-      const v = sumFor(c.id, reportYear, m - 1, d);
-      if(c.type === 'income') dayInc += v; else dayExp += v;
-    });
-    cells.forEach(c => c.classList.add('highlight-cell'));
-    status.textContent = (dayInc || dayExp)
-      ? `${fmtDate(iso)} — Income ${fmtMoney(dayInc)} · Expense ${fmtMoney(dayExp)}`
-      : `No entries on ${fmtDate(iso)}`;
-  }
-}
-function clearRepFilter(){
-  document.querySelectorAll('#gridHost .highlight-cell').forEach(c => c.classList.remove('highlight-cell'));
-  document.getElementById('repFilterStatus').textContent = '';
-}
+function changeYear(d){ reportYear += d; renderReport(); }
 
 function sumFor(catId, year, month, day){
   return transactions.reduce((acc,t) => {
@@ -474,6 +369,151 @@ function updateReportTotals(isSummary){
   const net = document.getElementById('repNet');
   net.textContent = fmtMoney(inc - exp);
   net.style.color = (inc - exp) < 0 ? 'var(--expense)' : 'var(--income)';
+}
+
+/* ============================================================
+   SHARED FILTER SYSTEM — Duration / Type / Payment Mode / Categories
+   Used by both the Cash Book and Expense Report tabs. `prefix` is
+   'cb' or 'rep', matching each tab's own set of filter elements.
+   ============================================================ */
+function refreshFilterCategoryOptions(){
+  ['cbfCategory','repfCategory'].forEach(id => {
+    const el = document.getElementById(id);
+    if(!el) return;
+    const current = el.value;
+    el.innerHTML = '<option value="all">All</option>' +
+      categories.map(c => `<option value="${c.id}">${esc(c.name)} (${c.type === 'income' ? 'Cash In' : 'Cash Out'})</option>`).join('');
+    if([...el.options].some(o => o.value === current)) el.value = current;
+  });
+}
+
+function handleDurationChange(prefix){
+  const isCustom = document.getElementById(prefix + 'fDuration').value === 'custom';
+  document.getElementById(prefix + 'fCustomRange').style.display = isCustom ? 'flex' : 'none';
+  if(!isCustom) handleFilterChange(prefix);
+}
+function handleFilterChange(prefix){
+  if(isFilterActive(prefix)) openFilterResultsPanel(prefix);
+  else closeFilterResultsPanel();
+}
+function resetFilters2(prefix){
+  document.getElementById(prefix + 'fDuration').value = 'all';
+  document.getElementById(prefix + 'fType').value = 'all';
+  document.getElementById(prefix + 'fPayMode').value = 'all';
+  document.getElementById(prefix + 'fCategory').value = 'all';
+  document.getElementById(prefix + 'fCustomRange').style.display = 'none';
+  closeFilterResultsPanel();
+}
+
+function isFilterActive(prefix){
+  return document.getElementById(prefix + 'fDuration').value !== 'all'
+      || document.getElementById(prefix + 'fType').value !== 'all'
+      || document.getElementById(prefix + 'fPayMode').value !== 'all'
+      || document.getElementById(prefix + 'fCategory').value !== 'all';
+}
+
+function getDurationRange(prefix){
+  const type = document.getElementById(prefix + 'fDuration').value;
+  const iso = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  const today = new Date();
+  if(type === 'today') return { start: iso(today), end: iso(today) };
+  if(type === 'yesterday'){ const y = new Date(today); y.setDate(y.getDate()-1); return { start: iso(y), end: iso(y) }; }
+  if(type === 'thismonth') return { start: iso(new Date(today.getFullYear(), today.getMonth(), 1)), end: iso(new Date(today.getFullYear(), today.getMonth()+1, 0)) };
+  if(type === 'lastmonth') return { start: iso(new Date(today.getFullYear(), today.getMonth()-1, 1)), end: iso(new Date(today.getFullYear(), today.getMonth(), 0)) };
+  if(type === 'custom'){
+    const s = document.getElementById(prefix + 'fStartDate').value;
+    const e = document.getElementById(prefix + 'fEndDate').value;
+    return (s && e) ? { start: s, end: e } : null;
+  }
+  return null; // 'all'
+}
+
+function getFilteredTransactions(prefix){
+  const range = getDurationRange(prefix);
+  const ty  = document.getElementById(prefix + 'fType').value;
+  const pm  = document.getElementById(prefix + 'fPayMode').value;
+  const cat = document.getElementById(prefix + 'fCategory').value;
+  return transactions.filter(t => {
+    const c = catById(t.categoryId); if(!c) return false;
+    if(range && (t.date < range.start || t.date > range.end)) return false;
+    if(ty !== 'all' && c.type !== ty) return false;
+    if(pm !== 'all' && t.paymentType !== pm) return false;
+    if(cat !== 'all' && t.categoryId !== cat) return false;
+    return true;
+  }).sort((a,b) => b.date.localeCompare(a.date));
+}
+
+/* ---------- Filtered Results side panel ---------- */
+let activeFilterPrefix = null;
+let returnToFilterAfterSave = null;
+
+function openFilterResultsPanel(prefix){
+  activeFilterPrefix = prefix;
+  renderFilterResultsPanel();
+  document.getElementById('filterOverlay').classList.add('active');
+}
+function closeFilterResultsPanel(){
+  document.getElementById('filterOverlay').classList.remove('active');
+  activeFilterPrefix = null;
+}
+function refreshFilterResultsPanel(){
+  if(activeFilterPrefix) renderFilterResultsPanel();
+}
+function renderFilterResultsPanel(){
+  const list = getFilteredTransactions(activeFilterPrefix);
+  let inc = 0, exp = 0;
+  list.forEach(t => { const c = catById(t.categoryId); if(c && c.type === 'income') inc += t.amount; else exp += t.amount; });
+  document.getElementById('frTotalIn').textContent  = fmtMoney(inc);
+  document.getElementById('frTotalOut').textContent = fmtMoney(exp);
+  const net = document.getElementById('frNet');
+  net.textContent = fmtMoney(inc - exp);
+  net.style.color = (inc - exp) < 0 ? 'var(--expense)' : 'var(--income)';
+
+  document.getElementById('frList').innerHTML = list.length
+    ? list.map(renderFilterRow).join('')
+    : '<div class="empty-state"><div class="big">No entries match</div><div>Try widening the filters.</div></div>';
+}
+function renderFilterRow(t){
+  const c = catById(t.categoryId);
+  const ty = c ? c.type : 'expense';
+  const name = c ? c.name : '(deleted category)';
+  return `<div class="fr-row">
+    <div class="fr-top">
+      <span class="tag ${ty}">${ty === 'income' ? 'Cash In' : 'Cash Out'}</span>
+      <span class="fr-date">${fmtDate(t.date)}</span>
+    </div>
+    <div class="fr-mid">
+      <span style="color:${ty==='income'?'var(--income)':'var(--expense)'};font-weight:600">${esc(name)}</span>
+      ${t.description ? `<span class="fr-desc"> — ${esc(t.description)}</span>` : ''}
+    </div>
+    <div class="fr-bottom">
+      <span class="pay-badge">${t.paymentType === 'cash' ? 'Cash' : 'Bank'}</span>
+      <span class="amt ${ty}">${ty === 'income' ? '+' : '-'}${fmtMoney(t.amount)}</span>
+      <span class="row-actions">
+        <button class="icon-btn" title="Edit" onclick="editFromFilterPanel('${t.id}')">&#9998;</button>
+        <button class="icon-btn danger" title="Delete" onclick="deleteFromFilterPanel('${t.id}')">&#128465;</button>
+      </span>
+    </div>
+  </div>`;
+}
+function editFromFilterPanel(id){
+  returnToFilterAfterSave = activeFilterPrefix;
+  closeFilterResultsPanel();
+  openTxnModal(id);
+}
+function deleteFromFilterPanel(id){
+  const t = transactions.find(x => x.id === id); if(!t) return;
+  const c = catById(t.categoryId);
+  askConfirm('Delete entry',
+    `Remove the ${fmtMoney(t.amount)} entry for <strong>${esc(c ? c.name : 'this category')}</strong> dated ${fmtDate(t.date)}? This cannot be undone.`,
+    async () => {
+      const { error } = await sb.from('transactions').delete().eq('id', id);
+      if(error){ showToast('Could not delete the entry: ' + error.message); return; }
+      transactions = transactions.filter(x => x.id !== id);
+      renderAll();
+      refreshFilterResultsPanel();
+      showToast('Entry deleted');
+    });
 }
 
 /* ============================================================
@@ -875,6 +915,10 @@ async function saveTxn(){
   const [sy,sm] = date.split('-').map(Number);
   cbYear = sy; cbMonth = sm - 1;
   renderAll(); closeTxnModal(); showToast('Entry saved');
+  if(returnToFilterAfterSave){
+    openFilterResultsPanel(returnToFilterAfterSave);
+    returnToFilterAfterSave = null;
+  }
 }
 
 function deleteTxn(id){
@@ -1002,13 +1046,14 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.querySelectorAll('.overlay').forEach(ov =>
     ov.addEventListener('click', e => { if(e.target === ov) ov.classList.remove('active'); }));
   document.addEventListener('keydown', e => {
-    if(e.key === 'Escape') document.querySelectorAll('.overlay.active').forEach(o => o.classList.remove('active'));
+    if(e.key === 'Escape'){
+      document.querySelectorAll('.overlay.active').forEach(o => o.classList.remove('active'));
+      document.querySelectorAll('.side-overlay.active').forEach(o => o.classList.remove('active'));
+    }
   });
 
   buildMonthButtons();
   buildCbMonthButtons();
-  buildCbFilterInputs();
-  buildRepFilterInputs();
 
   /* restore session if the tab was only refreshed — Supabase keeps this in its own storage */
   const { data } = await sb.auth.getSession();

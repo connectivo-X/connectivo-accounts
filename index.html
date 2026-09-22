@@ -127,15 +127,29 @@
   .icon-btn:hover{background:#EEF2EE;color:var(--ink)}
   .icon-btn.danger:hover{color:var(--expense)}
 
-  .filter-bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:14px;padding:10px 12px;
+  .filter-bar2{display:flex;gap:14px;flex-wrap:wrap;align-items:flex-end;margin-bottom:16px;padding:12px 14px;
     background:#FAFBFA;border:1px solid var(--rule-strong);border-radius:var(--radius)}
-  .filter-label{font-size:12.5px;font-weight:700;color:var(--ink);margin-right:2px}
-  .filter-bar select,.filter-bar input{padding:6px 9px;border:1px solid var(--rule-strong);border-radius:var(--radius);
+  .filter-item{display:flex;flex-direction:column;gap:4px}
+  .filter-item label{font-size:10.5px;font-weight:700;color:var(--ink-soft, var(--ink));text-transform:uppercase;letter-spacing:.3px}
+  .filter-item select,.filter-item input{padding:7px 9px;border:1px solid var(--rule-strong);border-radius:var(--radius);
     font-family:inherit;font-size:13px;background:#fff;color:var(--ink)}
-  .filter-bar input[type=number]{width:80px}
-  .filter-status{font-size:12.5px;color:var(--ink);font-style:italic}
-  tr.highlight-row td{background:#FFF3B0!important}
-  td.highlight-cell{background:#FFF3B0!important;font-weight:700}
+  .filter-item select{min-width:130px}
+
+  /* Filtered results list rows */
+  .fr-row{border:1px solid var(--rule);border-radius:8px;padding:10px 12px;margin-bottom:8px}
+  .fr-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px}
+  .fr-date{font-size:11.5px;color:var(--ink-soft, var(--ink))}
+  .fr-mid{font-size:13.5px;margin-bottom:6px}
+  .fr-desc{color:var(--ink-soft, var(--ink));font-size:12px}
+  .fr-bottom{display:flex;align-items:center;justify-content:space-between;gap:8px}
+  .tag{display:inline-block;font-size:11px;padding:2px 8px;border-radius:10px;font-weight:600}
+  .tag.income{background:var(--income-bg);color:var(--income)}
+  .tag.expense{background:var(--expense-bg);color:var(--expense)}
+  .pay-badge{font-size:11.5px;color:var(--ink-soft, var(--ink))}
+  .amt{font-variant-numeric:tabular-nums;font-weight:700}
+  .amt.income{color:var(--income)}
+  .amt.expense{color:var(--expense)}
+  .row-actions{display:flex;gap:2px}
 
   .period-bar{display:flex;gap:3px;flex-wrap:wrap;margin-bottom:16px;border-bottom:1px solid var(--rule);
     padding-bottom:12px;align-items:center}
@@ -365,19 +379,44 @@
           </div>
         </div>
 
-        <div class="filter-bar">
-          <span class="filter-label">Filter by:</span>
-          <select id="cbFilterType" onchange="buildCbFilterInputs()">
-            <option value="day">Day</option>
-            <option value="month">Month</option>
-            <option value="year">Year</option>
-          </select>
-          <span id="cbFilterInputs"></span>
-          <button class="btn btn-primary" style="padding:6px 14px" onclick="applyCbFilter()">Go</button>
-          <button class="btn btn-ghost" style="padding:6px 14px" onclick="clearCbFilter()">Clear</button>
-          <span class="period-sep"></span>
-          <button class="btn btn-ghost" style="padding:6px 14px" onclick="openExportModal('cashbook')">Export</button>
-          <span class="filter-status" id="cbFilterStatus"></span>
+        <div class="filter-bar2">
+          <div class="filter-item">
+            <label>Duration</label>
+            <select id="cbfDuration" onchange="handleDurationChange('cb')">
+              <option value="all">All Time</option>
+              <option value="today">Today</option>
+              <option value="yesterday">Yesterday</option>
+              <option value="thismonth">This month</option>
+              <option value="lastmonth">Last month</option>
+              <option value="custom">Custom</option>
+            </select>
+          </div>
+          <div class="filter-item" id="cbfCustomRange" style="display:none">
+            <label>Custom range</label>
+            <div style="display:flex;align-items:center;gap:6px">
+              <input type="date" id="cbfStartDate" onchange="handleFilterChange('cb')">
+              <span style="font-size:12px">to</span>
+              <input type="date" id="cbfEndDate" onchange="handleFilterChange('cb')">
+            </div>
+          </div>
+          <div class="filter-item">
+            <label>Type</label>
+            <select id="cbfType" onchange="handleFilterChange('cb')">
+              <option value="all">All</option><option value="income">Cash In</option><option value="expense">Cash Out</option>
+            </select>
+          </div>
+          <div class="filter-item">
+            <label>Payment Mode</label>
+            <select id="cbfPayMode" onchange="handleFilterChange('cb')">
+              <option value="all">All</option><option value="cash">Cash</option><option value="bank">Bank</option>
+            </select>
+          </div>
+          <div class="filter-item">
+            <label>Categories</label>
+            <select id="cbfCategory" onchange="handleFilterChange('cb')"><option value="all">All</option></select>
+          </div>
+          <button class="btn btn-ghost" style="padding:7px 14px" onclick="resetFilters2('cb')">Reset</button>
+          <button class="btn btn-ghost" style="padding:7px 14px" onclick="openExportModal('cashbook')">Export</button>
         </div>
 
         <div class="period-bar">
@@ -407,19 +446,44 @@
           <h2>Monthly Expense Report</h2>
         </div>
 
-        <div class="filter-bar">
-          <span class="filter-label">Filter by:</span>
-          <select id="repFilterType" onchange="buildRepFilterInputs()">
-            <option value="day">Day</option>
-            <option value="month">Month</option>
-            <option value="year">Year</option>
-          </select>
-          <span id="repFilterInputs"></span>
-          <button class="btn btn-primary" style="padding:6px 14px" onclick="applyRepFilter()">Go</button>
-          <button class="btn btn-ghost" style="padding:6px 14px" onclick="clearRepFilter()">Clear</button>
-          <span class="period-sep"></span>
-          <button class="btn btn-ghost" style="padding:6px 14px" onclick="openExportModal('report')">Export</button>
-          <span class="filter-status" id="repFilterStatus"></span>
+        <div class="filter-bar2">
+          <div class="filter-item">
+            <label>Duration</label>
+            <select id="repfDuration" onchange="handleDurationChange('rep')">
+              <option value="all">All Time</option>
+              <option value="today">Today</option>
+              <option value="yesterday">Yesterday</option>
+              <option value="thismonth">This month</option>
+              <option value="lastmonth">Last month</option>
+              <option value="custom">Custom</option>
+            </select>
+          </div>
+          <div class="filter-item" id="repfCustomRange" style="display:none">
+            <label>Custom range</label>
+            <div style="display:flex;align-items:center;gap:6px">
+              <input type="date" id="repfStartDate" onchange="handleFilterChange('rep')">
+              <span style="font-size:12px">to</span>
+              <input type="date" id="repfEndDate" onchange="handleFilterChange('rep')">
+            </div>
+          </div>
+          <div class="filter-item">
+            <label>Type</label>
+            <select id="repfType" onchange="handleFilterChange('rep')">
+              <option value="all">All</option><option value="income">Cash In</option><option value="expense">Cash Out</option>
+            </select>
+          </div>
+          <div class="filter-item">
+            <label>Payment Mode</label>
+            <select id="repfPayMode" onchange="handleFilterChange('rep')">
+              <option value="all">All</option><option value="cash">Cash</option><option value="bank">Bank</option>
+            </select>
+          </div>
+          <div class="filter-item">
+            <label>Categories</label>
+            <select id="repfCategory" onchange="handleFilterChange('rep')"><option value="all">All</option></select>
+          </div>
+          <button class="btn btn-ghost" style="padding:7px 14px" onclick="resetFilters2('rep')">Reset</button>
+          <button class="btn btn-ghost" style="padding:7px 14px" onclick="openExportModal('report')">Export</button>
         </div>
 
         <div class="report-top">
@@ -448,6 +512,24 @@
 </div>
 
 <!-- ===== Transaction modal (combined Add Entry) ===== -->
+<!-- ===== Filtered Results side panel ===== -->
+<div class="side-overlay" id="filterOverlay">
+  <div class="side-panel">
+    <div class="panel-head">
+      <h3 style="color:var(--menu)">Filtered Results</h3>
+      <button class="close-x" onclick="closeFilterResultsPanel()">&times;</button>
+    </div>
+    <div class="panel-body">
+      <div class="summary-row" style="grid-template-columns:repeat(3,1fr);margin-bottom:18px">
+        <div class="sum-card income"><div class="label">Total In</div><div class="val" id="frTotalIn">0</div></div>
+        <div class="sum-card expense"><div class="label">Total Out</div><div class="val" id="frTotalOut">0</div></div>
+        <div class="sum-card"><div class="label">Net</div><div class="val" id="frNet">0</div></div>
+      </div>
+      <div id="frList"></div>
+    </div>
+  </div>
+</div>
+
 <div class="side-overlay" id="txnOverlay">
   <div class="side-panel">
     <div class="panel-head">
