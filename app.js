@@ -37,9 +37,9 @@ function txnToDb(t){
 /* ---------- helpers ---------- */
 function uid(p){ return p + '_' + Date.now() + '_' + Math.random().toString(36).slice(2,8); }
 function esc(s){ return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
-function fmtMoney(n){ return (n<0?'-':'') + Math.abs(n).toLocaleString('en-US',{maximumFractionDigits:2}); }
-function fmtCell(n){ return n ? n.toLocaleString('en-US',{maximumFractionDigits:2}) : ''; }
-function cell(v){ return v ? v.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}) : ''; }
+function fmtMoney(n){ return (n<0?'-':'') + Math.round(Math.abs(n)).toLocaleString('en-US',{maximumFractionDigits:0}); }
+function fmtCell(n){ return n ? Math.round(n).toLocaleString('en-US',{maximumFractionDigits:0}) : ''; }
+function cell(v){ return v ? Math.round(v).toLocaleString('en-US',{maximumFractionDigits:0}) : ''; }
 function fmtDate(iso){
   if(!iso) return '';
   const [y,m,d] = iso.split('-').map(Number);
