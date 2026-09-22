@@ -295,10 +295,13 @@ function renderLedger(){
   html += '</tbody></table>';
   document.getElementById('ledgerHost').innerHTML = html;
 
-  document.getElementById('sumCash').textContent    = fmtMoney(cdCash);
-  document.getElementById('sumBank').textContent    = fmtMoney(cdBank);
-  document.getElementById('sumIncome').textContent  = fmtMoney(receipts.reduce((s,t) => s + t.amount, 0));
-  document.getElementById('sumExpense').textContent = fmtMoney(payments.reduce((s,t) => s + t.amount, 0));
+  document.getElementById('sumCash').textContent = fmtMoney(cdCash);
+  document.getElementById('sumBank').textContent = fmtMoney(cdBank);
+  const totalIn  = receipts.reduce((s,t) => s + t.amount, 0);
+  const totalOut = payments.reduce((s,t) => s + t.amount, 0);
+  document.getElementById('statCashIn').textContent      = fmtMoney(totalIn);
+  document.getElementById('statCashOut').textContent     = fmtMoney(totalOut);
+  document.getElementById('statNetBalance').textContent  = fmtMoney(totalIn - totalOut);
 }
 
 /* ============================================================

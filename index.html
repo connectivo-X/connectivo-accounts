@@ -90,6 +90,21 @@
   .sum-card.income .val{color:var(--income)}
   .sum-card.expense .val{color:var(--expense)}
 
+  .page-title{text-align:center;font-size:22px;color:var(--ink);margin-bottom:18px}
+  .cb-top-row{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:18px}
+  .stat-cards{display:flex;gap:12px;flex-wrap:wrap}
+  .stat-card{display:flex;align-items:center;gap:12px;background:var(--paper);border:1px solid var(--rule);
+    border-radius:10px;padding:12px 18px}
+  .stat-icon{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+    font-size:17px;font-weight:700;flex-shrink:0}
+  .stat-icon.in{background:var(--income-bg);color:var(--income)}
+  .stat-icon.out{background:var(--expense-bg);color:var(--expense)}
+  .stat-icon.net{background:var(--header-cell);color:var(--menu)}
+  .stat-label{font-size:12px;font-weight:600;margin-bottom:2px}
+  .stat-label.in{color:var(--income)}
+  .stat-label.out{color:var(--expense)}
+  .stat-label.net{color:var(--menu)}
+  .stat-val{font-size:18px;font-weight:700;color:var(--ink);font-variant-numeric:tabular-nums}
   .section-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:10px}
   .section-head h2{font-size:19px;color:var(--ink)}
   .head-actions{display:flex;gap:8px;flex-wrap:wrap}
@@ -139,12 +154,13 @@
   .grid-wrap{overflow-x:auto;border:1px solid var(--rule-strong);border-radius:var(--radius);background:var(--paper)}
   table.ledger{border-collapse:collapse;width:100%;font-size:12.5px;min-width:900px}
   table.ledger th,table.ledger td{border:1px solid var(--rule-strong);padding:5px 7px;vertical-align:middle;color:var(--ink)}
+  table.ledger td{font-weight:500}
   table.ledger .drcr th{background:var(--menu);color:#fff;font-family:'Lora',serif;font-size:14.5px;
     letter-spacing:.4px;text-align:center;padding:8px 9px;border-color:var(--menu)}
   table.ledger .drcr th.cr-side{border-left:3px solid #fff}
   table.ledger thead th{background:var(--header-cell);color:var(--ink);font-size:11px;font-weight:600;text-align:center;white-space:nowrap}
   table.ledger tr.sub-head th{background:#DCEAF3;color:var(--ink);font-size:10.5px;font-weight:600}
-  table.ledger td.num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+  table.ledger td.num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap;font-weight:700}
   table.ledger td.mid,table.ledger th.mid{border-left:3px solid var(--btn)}
   table.ledger tbody tr:hover td{background:#F7FAF7}
   table.ledger td.head-acct{min-width:180px}
@@ -326,8 +342,23 @@
 
       <!-- ===== CASH BOOK ===== -->
       <div class="tab-panel active" id="panel-cashbook">
-        <div class="section-head">
-          <h2>Cash &amp; Bank Book</h2>
+        <h2 class="page-title">Cash &amp; Bank Book</h2>
+
+        <div class="cb-top-row">
+          <div class="stat-cards">
+            <div class="stat-card">
+              <span class="stat-icon in">+</span>
+              <div><div class="stat-label in">Cash In</div><div class="stat-val" id="statCashIn">0</div></div>
+            </div>
+            <div class="stat-card">
+              <span class="stat-icon out">&minus;</span>
+              <div><div class="stat-label out">Cash Out</div><div class="stat-val" id="statCashOut">0</div></div>
+            </div>
+            <div class="stat-card">
+              <span class="stat-icon net">=</span>
+              <div><div class="stat-label net">Net Balance</div><div class="stat-val" id="statNetBalance">0</div></div>
+            </div>
+          </div>
           <div class="head-actions">
             <button class="btn btn-cashin" onclick="openTxnModal(null,'income')">+ Cash In</button>
             <button class="btn btn-cashout" onclick="openTxnModal(null,'expense')">&minus; Cash Out</button>
@@ -364,11 +395,9 @@
         </div>
         <div class="grid-wrap"><div id="ledgerHost"></div></div>
 
-        <div class="summary-row" style="margin-top:20px">
+        <div class="summary-row" style="margin-top:20px;grid-template-columns:repeat(2,1fr)">
           <div class="sum-card cash"><div class="label">Closing cash (C/D)</div><div class="val" id="sumCash">0</div></div>
           <div class="sum-card bank"><div class="label">Closing bank (C/D)</div><div class="val" id="sumBank">0</div></div>
-          <div class="sum-card income"><div class="label">Receipts this month</div><div class="val" id="sumIncome">0</div></div>
-          <div class="sum-card expense"><div class="label">Payments this month</div><div class="val" id="sumExpense">0</div></div>
         </div>
       </div>
 
