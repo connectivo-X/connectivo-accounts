@@ -127,6 +127,15 @@
   .icon-btn:hover{background:#EEF2EE;color:var(--ink)}
   .icon-btn.danger:hover{color:var(--expense)}
 
+  .reports-dropdown{position:relative;order:-1}
+  .btn-reports{display:flex;align-items:center;gap:7px;background:var(--menu);color:#fff;border:none;
+    border-radius:var(--radius);padding:9px 16px;font-size:13.5px;font-weight:700;cursor:pointer}
+  .btn-reports:hover{background:#256B9F}
+  .reports-menu{position:absolute;top:calc(100% + 6px);left:0;z-index:25;background:#fff;border:1px solid var(--rule-strong);
+    border-radius:8px;box-shadow:0 10px 30px rgba(0,0,0,.15);min-width:170px;overflow:hidden}
+  .reports-option{display:flex;align-items:center;gap:10px;padding:10px 14px;font-size:13.5px;font-weight:600;
+    color:var(--ink);cursor:pointer}
+  .reports-option:hover{background:var(--header-cell)}
   .filter-bar2{display:flex;gap:14px;flex-wrap:wrap;align-items:flex-end;margin-bottom:16px;padding:12px 14px;
     background:#FAFBFA;border:1px solid var(--rule-strong);border-radius:var(--radius)}
   .filter-item{display:flex;flex-direction:column;gap:4px}
@@ -380,6 +389,22 @@
         </div>
 
         <div class="filter-bar2">
+          <div class="reports-dropdown">
+            <button class="btn-reports" onclick="toggleReportsMenu('cb')">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 3v12"/><path d="M6 11l6 6 6-6"/><path d="M4 20h16"/></svg>
+              Reports
+            </button>
+            <div class="reports-menu" id="cbReportsMenu" style="display:none">
+              <div class="reports-option" onclick="quickExport('cashbook','pdf')">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#C0392B" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><text x="7" y="18" font-size="7" fill="#C0392B" stroke="none" font-weight="700">PDF</text></svg>
+                PDF Report
+              </div>
+              <div class="reports-option" onclick="quickExport('cashbook','excel')">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#1E7B45" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M9 13l6 6M15 13l-6 6"/></svg>
+                Excel Report
+              </div>
+            </div>
+          </div>
           <div class="filter-item">
             <label>Duration</label>
             <select id="cbfDuration" onchange="handleDurationChange('cb')">
@@ -416,7 +441,6 @@
             <select id="cbfCategory" onchange="handleFilterChange('cb')"><option value="all">All</option></select>
           </div>
           <button class="btn btn-ghost" style="padding:7px 14px" onclick="resetFilters2('cb')">Reset</button>
-          <button class="btn btn-ghost" style="padding:7px 14px" onclick="openExportModal('cashbook')">Export</button>
         </div>
 
         <div class="period-bar">
@@ -447,6 +471,22 @@
         </div>
 
         <div class="filter-bar2">
+          <div class="reports-dropdown">
+            <button class="btn-reports" onclick="toggleReportsMenu('rep')">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 3v12"/><path d="M6 11l6 6 6-6"/><path d="M4 20h16"/></svg>
+              Reports
+            </button>
+            <div class="reports-menu" id="repReportsMenu" style="display:none">
+              <div class="reports-option" onclick="quickExport('report','pdf')">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#C0392B" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><text x="7" y="18" font-size="7" fill="#C0392B" stroke="none" font-weight="700">PDF</text></svg>
+                PDF Report
+              </div>
+              <div class="reports-option" onclick="quickExport('report','excel')">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#1E7B45" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M9 13l6 6M15 13l-6 6"/></svg>
+                Excel Report
+              </div>
+            </div>
+          </div>
           <div class="filter-item">
             <label>Duration</label>
             <select id="repfDuration" onchange="handleDurationChange('rep')">
@@ -483,7 +523,6 @@
             <select id="repfCategory" onchange="handleFilterChange('rep')"><option value="all">All</option></select>
           </div>
           <button class="btn btn-ghost" style="padding:7px 14px" onclick="resetFilters2('rep')">Reset</button>
-          <button class="btn btn-ghost" style="padding:7px 14px" onclick="openExportModal('report')">Export</button>
         </div>
 
         <div class="report-top">
@@ -673,33 +712,6 @@
   </div>
 </div>
 
-<!-- ===== Export modal ===== -->
-<div class="overlay" id="exportOverlay">
-  <div class="modal" style="max-width:380px">
-    <div class="modal-head"><h3>Export</h3><button class="close-x" onclick="closeExportModal()">&times;</button></div>
-    <div class="modal-body">
-      <input type="hidden" id="exportSource">
-      <div class="field">
-        <label>What to export</label>
-        <select id="exportScope">
-          <option value="current">Current view (what's on screen)</option>
-          <option value="whole">Whole report (everything)</option>
-        </select>
-      </div>
-      <div class="field" style="margin-bottom:0">
-        <label>Format</label>
-        <select id="exportFormat">
-          <option value="excel">Excel (.xlsx)</option>
-          <option value="pdf">PDF</option>
-        </select>
-      </div>
-    </div>
-    <div class="modal-foot">
-      <button class="btn btn-ghost" onclick="closeExportModal()">Cancel</button>
-      <button class="btn btn-primary" onclick="runExport()">Download</button>
-    </div>
-  </div>
-</div>
 
 <div class="toast" id="toast"></div>
 
@@ -1244,25 +1256,24 @@ function deleteFromFilterPanel(id){
 /* ============================================================
    EXPORT — Excel (.xlsx) and PDF, for both Cash Book and Expense Report
    ============================================================ */
-function openExportModal(source){
-  document.getElementById('exportSource').value = source;
-  document.getElementById('exportOverlay').classList.add('active');
+function toggleReportsMenu(prefix){
+  const menu = document.getElementById(prefix + 'ReportsMenu');
+  const isOpen = menu.style.display === 'block';
+  document.querySelectorAll('.reports-menu').forEach(m => m.style.display = 'none');
+  menu.style.display = isOpen ? 'none' : 'block';
 }
-function closeExportModal(){ document.getElementById('exportOverlay').classList.remove('active'); }
+document.addEventListener('click', e => {
+  if(!e.target.closest('.reports-dropdown')) document.querySelectorAll('.reports-menu').forEach(m => m.style.display = 'none');
+});
 
-function runExport(){
-  const source = document.getElementById('exportSource').value;
-  const scope  = document.getElementById('exportScope').value;
-  const format = document.getElementById('exportFormat').value;
-  closeExportModal();
+/* Exports whatever is currently on screen — the open month for Cash Book, the open year/month for Expense Report */
+function quickExport(source, format){
+  document.querySelectorAll('.reports-menu').forEach(m => m.style.display = 'none');
   try{
     if(source === 'cashbook'){
-      const months = scope === 'current' ? [{ year: cbYear, month: cbMonth }] : allMonthsWithData();
-      if(!months.length){ showToast('No entries to export yet.'); return; }
-      format === 'excel' ? exportCashBookExcel(months) : exportCashBookPdf(months);
+      format === 'excel' ? exportCashBookExcel([{ year: cbYear, month: cbMonth }]) : exportCashBookPdf([{ year: cbYear, month: cbMonth }]);
     } else {
-      const period = scope === 'current' ? reportPeriod : 'summary';
-      format === 'excel' ? exportReportExcel(reportYear, period) : exportReportPdf(reportYear, period);
+      format === 'excel' ? exportReportExcel(reportYear, reportPeriod) : exportReportPdf(reportYear, reportPeriod);
     }
     showToast('Download started');
   }catch(e){

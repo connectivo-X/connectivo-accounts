@@ -519,25 +519,24 @@ function deleteFromFilterPanel(id){
 /* ============================================================
    EXPORT — Excel (.xlsx) and PDF, for both Cash Book and Expense Report
    ============================================================ */
-function openExportModal(source){
-  document.getElementById('exportSource').value = source;
-  document.getElementById('exportOverlay').classList.add('active');
+function toggleReportsMenu(prefix){
+  const menu = document.getElementById(prefix + 'ReportsMenu');
+  const isOpen = menu.style.display === 'block';
+  document.querySelectorAll('.reports-menu').forEach(m => m.style.display = 'none');
+  menu.style.display = isOpen ? 'none' : 'block';
 }
-function closeExportModal(){ document.getElementById('exportOverlay').classList.remove('active'); }
+document.addEventListener('click', e => {
+  if(!e.target.closest('.reports-dropdown')) document.querySelectorAll('.reports-menu').forEach(m => m.style.display = 'none');
+});
 
-function runExport(){
-  const source = document.getElementById('exportSource').value;
-  const scope  = document.getElementById('exportScope').value;
-  const format = document.getElementById('exportFormat').value;
-  closeExportModal();
+/* Exports whatever is currently on screen — the open month for Cash Book, the open year/month for Expense Report */
+function quickExport(source, format){
+  document.querySelectorAll('.reports-menu').forEach(m => m.style.display = 'none');
   try{
     if(source === 'cashbook'){
-      const months = scope === 'current' ? [{ year: cbYear, month: cbMonth }] : allMonthsWithData();
-      if(!months.length){ showToast('No entries to export yet.'); return; }
-      format === 'excel' ? exportCashBookExcel(months) : exportCashBookPdf(months);
+      format === 'excel' ? exportCashBookExcel([{ year: cbYear, month: cbMonth }]) : exportCashBookPdf([{ year: cbYear, month: cbMonth }]);
     } else {
-      const period = scope === 'current' ? reportPeriod : 'summary';
-      format === 'excel' ? exportReportExcel(reportYear, period) : exportReportPdf(reportYear, period);
+      format === 'excel' ? exportReportExcel(reportYear, reportPeriod) : exportReportPdf(reportYear, reportPeriod);
     }
     showToast('Download started');
   }catch(e){
