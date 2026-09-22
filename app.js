@@ -252,15 +252,15 @@ function renderLedger(){
   const rows = Math.max(receipts.length, payments.length, MIN_ROWS);
 
   let html = `<table class="ledger">
-    <tr class="drcr"><th colspan="6">Dr.</th><th colspan="6" class="cr-side">Cr.</th></tr>
     <thead>
-      <tr>
+      <tr class="drcr"><th colspan="6">Dr.</th><th colspan="6" class="cr-side">Cr.</th></tr>
+      <tr class="col-head">
         <th rowspan="2">Date</th><th rowspan="2">Received / Head Of Account</th>
         <th rowspan="2">Ref</th><th rowspan="2">Vc No.</th><th colspan="2">Amount</th>
         <th rowspan="2" class="mid">Date</th><th rowspan="2">Payment / Head Of Account</th>
         <th rowspan="2">Ref</th><th rowspan="2">Vc No.</th><th colspan="2">Amount</th>
       </tr>
-      <tr><th>Cash</th><th>Bank</th><th>Cash</th><th>Bank</th></tr>
+      <tr class="sub-head"><th>Cash</th><th>Bank</th><th>Cash</th><th>Bank</th></tr>
     </thead><tbody>`;
 
   /* Balance B/D sits on the Dr. side of the first row */
