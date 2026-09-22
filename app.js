@@ -548,6 +548,145 @@ function quickExport(source, format){
   }
 }
 
+/* ============================================================
+   EXPORT TRANSACTIONS preview panel (Cash Book PDF/Excel)
+   ============================================================ */
+let exportPreviewFormat = 'pdf';
+let exportFilterType = 'all';
+const EP_PREVIEW_CAP = 30;
+const EP_PILL_IDS = { all:'epAll', month:'epMonth', day:'epDay', category:'epCategory', paymode:'epPayMode' };
+
+function openExportPreview(format){
+  exportPreviewFormat = format;
+  exportFilterType = 'all';
+  document.querySelectorAll('.reports-menu').forEach(m => m.style.display = 'none');
+  document.querySelectorAll('.export-pill').forEach(p => p.classList.remove('active'));
+  document.getElementById('epAll').classList.add('active');
+  document.getElementById('epSubControl').style.display = 'none';
+  document.getElementById('epSubControl').innerHTML = '';
+  renderExportPreview();
+  document.getElementById('exportPreviewOverlay').classList.add('active');
+}
+function closeExportPreview(){ document.getElementById('exportPreviewOverlay').classList.remove('active'); }
+
+function setExportFilter(type){
+  exportFilterType = type;
+  document.querySelectorAll('.export-pill').forEach(p => p.classList.remove('active'));
+  document.getElementById(EP_PILL_IDS[type]).classList.add('active');
+  buildExportSubControl(type);
+  renderExportPreview();
+}
+
+function buildExportSubControl(type){
+  const el = document.getElementById('epSubControl');
+  if(type === 'all'){ el.style.display = 'none'; el.innerHTML = ''; return; }
+  el.style.display = 'block';
+  if(type === 'month'){
+    el.innerHTML = `<div class="filter-item"><label>Month</label>
+      <div style="display:flex;gap:8px">
+        <select id="epMonthSel" onchange="renderExportPreview()">${MONTHS.map((m,i)=>`<option value="${i}"${i===cbMonth?' selected':''}>${m}</option>`).join('')}</select>
+        <input type="number" id="epYearSel" value="${cbYear}" style="width:90px" onchange="renderExportPreview()">
+      </div></div>`;
+  } else if(type === 'day'){
+    el.innerHTML = `<div class="filter-item"><label>Date</label>
+      <input type="date" id="epDateSel" value="${new Date().toISOString().slice(0,10)}" onchange="renderExportPreview()"></div>`;
+  } else if(type === 'category'){
+    el.innerHTML = `<div class="filter-item"><label>Category</label>
+      <select id="epCatSel" onchange="renderExportPreview()">${categories.map(c=>`<option value="${c.id}">${esc(c.name)} (${c.type==='income'?'Cash In':'Cash Out'})</option>`).join('')}</select></div>`;
+  } else if(type === 'paymode'){
+    el.innerHTML = `<div class="filter-item"><label>Payment Mode</label>
+      <select id="epPayModeSel" onchange="renderExportPreview()"><option value="cash">Cash</option><option value="bank">Bank</option></select></div>`;
+  }
+}
+
+function getExportTransactions(){
+  const sorted = list => [...list].sort((a,b) => b.date.localeCompare(a.date));
+  if(exportFilterType === 'all') return sorted(transactions);
+  if(exportFilterType === 'month'){
+    const m = parseInt(document.getElementById('epMonthSel').value, 10);
+    const y = parseInt(document.getElementById('epYearSel').value, 10);
+    return sorted(transactions.filter(t => { const [ty,tm] = t.date.split('-').map(Number); return ty===y && tm-1===m; }));
+  }
+  if(exportFilterType === 'day'){
+    const d = document.getElementById('epDateSel').value;
+    return transactions.filter(t => t.date === d);
+  }
+  if(exportFilterType === 'category'){
+    const cid = document.getElementById('epCatSel').value;
+    return sorted(transactions.filter(t => t.categoryId === cid));
+  }
+  if(exportFilterType === 'paymode'){
+    const pm = document.getElementById('epPayModeSel').value;
+    return sorted(transactions.filter(t => t.paymentType === pm));
+  }
+  return [];
+}
+
+function exportSubtitle(){
+  if(exportFilterType === 'all') return 'All Entries';
+  if(exportFilterType === 'month'){
+    const m = parseInt(document.getElementById('epMonthSel').value, 10);
+    return MONTH_FULL[m] + ' - ' + document.getElementById('epYearSel').value;
+  }
+  if(exportFilterType === 'day') return fmtDate(document.getElementById('epDateSel').value);
+  if(exportFilterType === 'category'){
+    const c = catById(document.getElementById('epCatSel').value);
+    return 'Category: ' + (c ? c.name : '');
+  }
+  if(exportFilterType === 'paymode') return 'Payment Mode: ' + (document.getElementById('epPayModeSel').value === 'cash' ? 'Cash' : 'Bank');
+  return '';
+}
+
+function renderExportPreview(){
+  const list = getExportTransactions();
+  let inc = 0, exp = 0;
+  list.forEach(t => { const c = catById(t.categoryId); if(c && c.type === 'income') inc += t.amount; else exp += t.amount; });
+  document.getElementById('epTotalIn').textContent = fmtMoney(inc);
+  document.getElementById('epTotalOut').textContent = fmtMoney(exp);
+  const net = document.getElementById('epNet');
+  net.textContent = fmtMoney(inc - exp);
+  net.style.color = (inc - exp) < 0 ? 'var(--expense)' : 'var(--income)';
+
+  const shown = list.slice(0, EP_PREVIEW_CAP);
+  document.getElementById('epPreviewBody').innerHTML = shown.length ? shown.map(t => {
+    const c = catById(t.categoryId);
+    const isIn = c && c.type === 'income';
+    return `<tr>
+      <td>${fmtDate(t.date)}</td>
+      <td style="color:${isIn?'var(--income)':'var(--expense)'}">${esc(c ? c.name : '(deleted)')}</td>
+      <td>${esc(t.description || '—')}</td>
+      <td>${t.paymentType === 'cash' ? 'Cash' : 'Bank'}</td>
+      <td class="num" style="color:var(--income)">${isIn ? fmtMoney(t.amount) : ''}</td>
+      <td class="num" style="color:var(--expense)">${isIn ? '' : fmtMoney(t.amount)}</td>
+    </tr>`;
+  }).join('') : `<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--ink)">No entries match</td></tr>`;
+
+  document.getElementById('epPreviewNote').textContent = list.length > EP_PREVIEW_CAP
+    ? `Showing ${EP_PREVIEW_CAP} of ${list.length} entries — the download includes all ${list.length}.`
+    : (list.length ? `${list.length} entr${list.length===1?'y':'ies'} will be exported.` : '');
+}
+
+function downloadExportReport(){
+  const list = getExportTransactions();
+  if(!list.length){ showToast('No entries to export.'); return; }
+  const subtitle = exportSubtitle();
+  try{
+    if(exportFilterType === 'month'){
+      const m = parseInt(document.getElementById('epMonthSel').value, 10);
+      const y = parseInt(document.getElementById('epYearSel').value, 10);
+      exportPreviewFormat === 'excel' ? exportCashBookExcel([{ year:y, month:m }]) : exportCashBookPdf([{ year:y, month:m }]);
+    } else {
+      exportPreviewFormat === 'excel'
+        ? exportCashBookFlatExcel(list, subtitle, exportFilterType)
+        : exportCashBookFlatPdf(list, subtitle, exportFilterType);
+    }
+    showToast('Download started');
+    closeExportPreview();
+  }catch(e){
+    showToast('Export failed: ' + e.message);
+  }
+}
+
 /* every {year, month} that has at least one transaction, oldest first */
 function allMonthsWithData(){
   const set = new Set();
@@ -624,6 +763,77 @@ function exportCashBookExcel(months){
   });
   const label = months.length === 1 ? MONTHS[months[0].month] + '-' + months[0].year : 'all-months';
   XLSX.writeFile(wb, 'Connectivo-CashBook-' + label + '.xlsx');
+}
+
+/* ---------- Cash Book: flat transaction list (Excel + PDF) — for All Entries / Day-wise / Category-wise / Payment Mode-wise ---------- */
+function flatRowsForSheet(list, subtitle){
+  const rows = [];
+  rows.push(styleRow(['CONNECTIVO','','','','','','',''], XLSX_BRAND));
+  rows.push(styleRow(['Cash & Bank Book — Transactions','','','','','','',''], XLSX_SUBTITLE));
+  rows.push(styleRow([subtitle,'','','','','','',''], XLSX_SUBTITLE));
+  rows.push([]);
+  rows.push(styleRow(['Date','Category','Remark','Ref','Vc No.','Mode','Cash In','Cash Out'], XLSX_HEADROW));
+
+  let totalIn = 0, totalOut = 0;
+  list.forEach(t => {
+    const c = catById(t.categoryId);
+    const isIn = c && c.type === 'income';
+    if(isIn) totalIn += t.amount; else totalOut += t.amount;
+    rows.push([fmtDate(t.date), c ? c.name : '(deleted category)', t.description || '', t.ref || '', t.vcNo || '',
+      t.paymentType === 'cash' ? 'Cash' : 'Bank', isIn ? t.amount : '', isIn ? '' : t.amount]);
+  });
+  rows.push(styleRow(['','Total','','','','', totalIn, totalOut], XLSX_TOTAL_TINT));
+  return rows;
+}
+function exportCashBookFlatExcel(list, subtitle, filterKey){
+  const ws = XLSX.utils.aoa_to_sheet(flatRowsForSheet(list, subtitle));
+  ws['!cols'] = [{wch:12},{wch:20},{wch:22},{wch:8},{wch:8},{wch:8},{wch:12},{wch:12}];
+  ws['!merges'] = [
+    { s:{r:0,c:0}, e:{r:0,c:7} },
+    { s:{r:1,c:0}, e:{r:1,c:7} },
+    { s:{r:2,c:0}, e:{r:2,c:7} },
+  ];
+  ws['!rows'] = [{hpt:22},{hpt:15},{hpt:15}];
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, safeSheetName('Transactions'));
+  XLSX.writeFile(wb, 'Connectivo-CashBook-' + filterKey + '-' + Date.now() + '.xlsx');
+}
+function exportCashBookFlatPdf(list, subtitle, filterKey){
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ orientation: 'portrait' });
+  const { topH, botH, pw } = drawLetterheadBanners(doc);
+
+  const titleY = topH + 8;
+  doc.setTextColor(20, 20, 20);
+  doc.setFont(undefined, 'bold'); doc.setFontSize(13);
+  doc.text('Cash & Bank Book — Transactions', pw / 2, titleY, { align: 'center' });
+  doc.setFont(undefined, 'normal'); doc.setFontSize(10);
+  doc.text(subtitle, pw / 2, titleY + 6, { align: 'center' });
+
+  let totalIn = 0, totalOut = 0;
+  const body = list.map(t => {
+    const c = catById(t.categoryId);
+    const isIn = c && c.type === 'income';
+    if(isIn) totalIn += t.amount; else totalOut += t.amount;
+    return [fmtDate(t.date), c ? c.name : '(deleted category)', t.description || '', t.ref || '', t.vcNo || '',
+      t.paymentType === 'cash' ? 'Cash' : 'Bank', isIn ? cell(t.amount) : '', isIn ? '' : cell(t.amount)];
+  });
+  body.push(['','Total','','','','', cell(totalIn), cell(totalOut)]);
+
+  doc.autoTable({
+    startY: titleY + 10, margin: { left: 10, right: 10, bottom: botH + 6 },
+    head: [['Date','Category','Remark','Ref','Vc No.','Mode','Cash In','Cash Out']],
+    body, theme: 'grid', styles: { fontSize: 8, cellPadding: 1.5, lineColor: [180,190,200] },
+    headStyles: { fillColor: PDF_SUBHEAD_BLUE, textColor: [20,20,20], fontStyle: 'bold', halign: 'center' },
+    didParseCell: data => {
+      if(data.section === 'body' && data.row.index === body.length - 1){
+        data.cell.styles.fillColor = [234,242,248];
+        data.cell.styles.fontStyle = 'bold';
+      }
+    },
+    didDrawPage: () => drawLetterheadBanners(doc)
+  });
+  doc.save('Connectivo-CashBook-' + filterKey + '-' + Date.now() + '.pdf');
 }
 
 /* ---------- Cash Book: PDF ---------- */

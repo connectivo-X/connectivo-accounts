@@ -127,6 +127,16 @@
   .icon-btn:hover{background:#EEF2EE;color:var(--ink)}
   .icon-btn.danger:hover{color:var(--expense)}
 
+  .export-pills{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}
+  .export-pill{padding:8px 16px;border-radius:999px;border:1.5px solid var(--rule-strong);background:#fff;
+    font-size:13px;font-weight:600;color:var(--ink);cursor:pointer}
+  .export-pill.active{background:var(--header-cell);border-color:var(--menu);color:var(--menu)}
+  .table-scroll{overflow-x:auto;overflow-y:auto;max-height:320px}
+  table.preview-table{width:100%;border-collapse:collapse;font-size:12.5px}
+  table.preview-table th{position:sticky;top:0;background:var(--header-cell);color:var(--ink);text-align:left;
+    padding:7px 8px;font-size:11px;font-weight:700;white-space:nowrap;border-bottom:2px solid var(--rule-strong)}
+  table.preview-table td{padding:6px 8px;border-bottom:1px solid var(--rule);white-space:nowrap}
+  table.preview-table td.num{text-align:right;font-variant-numeric:tabular-nums;font-weight:600}
   .reports-dropdown{position:relative;order:-1}
   .btn-reports{display:flex;align-items:center;gap:7px;background:var(--menu);color:#fff;border:none;
     border-radius:var(--radius);padding:9px 16px;font-size:13.5px;font-weight:700;cursor:pointer}
@@ -395,11 +405,11 @@
               Reports
             </button>
             <div class="reports-menu" id="cbReportsMenu" style="display:none">
-              <div class="reports-option" onclick="quickExport('cashbook','pdf')">
+              <div class="reports-option" onclick="openExportPreview('pdf')">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#C0392B" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><text x="7" y="18" font-size="7" fill="#C0392B" stroke="none" font-weight="700">PDF</text></svg>
                 PDF Report
               </div>
-              <div class="reports-option" onclick="quickExport('cashbook','excel')">
+              <div class="reports-option" onclick="openExportPreview('excel')">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#1E7B45" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M9 13l6 6M15 13l-6 6"/></svg>
                 Excel Report
               </div>
@@ -552,6 +562,48 @@
 
 <!-- ===== Transaction modal (combined Add Entry) ===== -->
 <!-- ===== Filtered Results side panel ===== -->
+<!-- ===== Export Transactions side panel (Cash Book) ===== -->
+<div class="side-overlay" id="exportPreviewOverlay">
+  <div class="side-panel" style="width:520px">
+    <div class="panel-head">
+      <h3 style="color:var(--ink)">Export Transactions</h3>
+      <button class="close-x" onclick="closeExportPreview()">&times;</button>
+    </div>
+    <div class="panel-body">
+      <div class="export-pills">
+        <button class="export-pill active" id="epAll" onclick="setExportFilter('all')">All Entries</button>
+        <button class="export-pill" id="epMonth" onclick="setExportFilter('month')">Month-wise</button>
+        <button class="export-pill" id="epDay" onclick="setExportFilter('day')">Day-wise</button>
+        <button class="export-pill" id="epCategory" onclick="setExportFilter('category')">Category-wise</button>
+        <button class="export-pill" id="epPayMode" onclick="setExportFilter('paymode')">Payment Mode-wise</button>
+      </div>
+
+      <div id="epSubControl" style="display:none;margin-bottom:16px"></div>
+
+      <div class="summary-row" style="grid-template-columns:repeat(3,1fr);margin-bottom:16px">
+        <div class="sum-card income"><div class="label">Cash In</div><div class="val" id="epTotalIn">0</div></div>
+        <div class="sum-card expense"><div class="label">Cash Out</div><div class="val" id="epTotalOut">0</div></div>
+        <div class="sum-card"><div class="label">Net</div><div class="val" id="epNet">0</div></div>
+      </div>
+
+      <h3 style="font-size:15px;margin-bottom:10px">Preview</h3>
+      <div class="table-scroll" style="border:1px solid var(--rule);border-radius:8px">
+        <table class="preview-table">
+          <thead><tr><th>Date</th><th>Category</th><th>Remark</th><th>Mode</th><th>Cash In</th><th>Cash Out</th></tr></thead>
+          <tbody id="epPreviewBody"></tbody>
+        </table>
+      </div>
+      <div class="filter-status" id="epPreviewNote" style="margin-top:8px"></div>
+    </div>
+    <div class="panel-foot" style="display:flex;justify-content:flex-end">
+      <button class="btn-save-pill" style="width:auto;padding:11px 22px;display:flex;align-items:center;gap:8px" onclick="downloadExportReport()">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 3v12"/><path d="M6 11l6 6 6-6"/><path d="M4 20h16"/></svg>
+        Download Report
+      </button>
+    </div>
+  </div>
+</div>
+
 <div class="side-overlay" id="filterOverlay">
   <div class="side-panel">
     <div class="panel-head">
