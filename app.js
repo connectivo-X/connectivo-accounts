@@ -216,7 +216,7 @@ function ledgerSide(t, isCr){
   const note = t.description ? `<div class="acct-note">${esc(t.description)}</div>` : '';
   return `
     <td class="date-c${isCr ? ' mid' : ''}" data-date="${t.date}">${fmtDate(t.date)}</td>
-    <td class="head-acct"><div class="acct-line"><div><div>${esc(name)}</div>${note}</div>
+    <td class="head-acct"><div class="acct-line"><div><div style="color:${c && c.type==='income'?'var(--income)':'var(--expense)'}">${esc(name)}</div>${note}</div>
       <span class="acts">
         <button class="icon-btn" title="Edit" onclick="openTxnModal('${t.id}')">&#9998;</button>
         <button class="icon-btn danger" title="Delete" onclick="deleteTxn('${t.id}')">&#128465;</button>
@@ -437,7 +437,7 @@ function renderReport(){
       }
       items.forEach(cat => {
         const vals = cols.map(c => val(cat.id, c));
-        html += `<tr class="cat-row"><td class="cat-col"><div class="cat-name-cell"><span>${esc(cat.name)}</span>
+        html += `<tr class="cat-row"><td class="cat-col"><div class="cat-name-cell"><span style="color:${cat.type==='income'?'var(--income)':'var(--expense)'}">${esc(cat.name)}</span>
           <span class="acts">
             <button class="icon-btn" title="Edit" onclick="openCatModal('${cat.id}')">&#9998;</button>
             <button class="icon-btn danger" title="Delete" onclick="deleteCat('${cat.id}')">&#128465;</button>
@@ -658,67 +658,169 @@ function exportReportPdf(year, period){
 /* ============================================================
    MODALS
    ============================================================ */
-document.addEventListener('click', e => {
-  const opt = e.target.closest('.radio-opt'); if(!opt) return;
-  opt.closest('.radio-row').querySelectorAll('.radio-opt').forEach(o => o.classList.remove('checked'));
-  opt.classList.add('checked');
-  opt.querySelector('input').checked = true;
-});
-function setRadio(id, v){
-  document.querySelectorAll('#' + id + ' .radio-opt').forEach(o => {
-    const on = o.dataset.val === v;
-    o.querySelector('input').checked = on;
-    o.classList.toggle('checked', on);
-  });
-}
 
-function fillCatOptions(sel){
-  const el  = document.getElementById('txnCategory');
-  const inc = categories.filter(c => c.type === 'income');
-  const exp = categories.filter(c => c.type === 'expense');
-  let h = '';
-  if(inc.length) h += '<optgroup label="Income (Dr.)">'  + inc.map(c => `<option value="${c.id}">${esc(c.name)}</option>`).join('') + '</optgroup>';
-  if(exp.length) h += '<optgroup label="Expense (Cr.)">' + exp.map(c => `<option value="${c.id}">${esc(c.name)}</option>`).join('') + '</optgroup>';
-  h += '<option value="__new__">+ Add new category…</option>';
-  el.innerHTML = h;
-  el.value = sel || (categories.length ? categories[0].id : '__new__');
-  handleTxnCategoryChange();
-}
-function handleTxnCategoryChange(){
-  const isNew = document.getElementById('txnCategory').value === '__new__';
-  document.getElementById('inlineNewCat').style.display = isNew ? 'block' : 'none';
-}
+/* ---------- Add Cash In / Cash Out side panel ---------- */
+const MONTHS_SHORT = MONTHS.map(m => m.charAt(0) + m.slice(1).toLowerCase());
+let catSearchPool = [];
+let dpViewYear, dpViewMonth;
+
 function defaultEntryDate(){
   const today = new Date();
   if(today.getFullYear() === cbYear && today.getMonth() === cbMonth) return today.toISOString().slice(0,10);
   return `${cbYear}-${String(cbMonth+1).padStart(2,'0')}-01`;
 }
-function openTxnModal(id){
+function fmtDateShort(iso){
+  const [y,m,d] = iso.split('-').map(Number);
+  return d + ' ' + MONTHS_SHORT[m-1] + ', ' + y;
+}
+
+/* -- Cash In / Cash Out toggle -- */
+function setEntryTypeUI(type){
+  document.getElementById('toggleCashIn').classList.toggle('active', type === 'income');
+  document.getElementById('toggleCashOut').classList.toggle('active', type === 'expense');
+  const title = document.getElementById('txnModalTitle');
+  title.textContent = type === 'income' ? 'Add Cash In Entry' : 'Add Cash Out Entry';
+  title.style.color = type === 'income' ? 'var(--income)' : 'var(--expense)';
+  document.getElementById('txnEntryType').value = type;
+  catSearchPool = categories.filter(c => c.type === type);
+  document.getElementById('newCatType').value = type;
+  document.getElementById('newCatType').disabled = true;
+}
+function switchEntryType(type){
+  setEntryTypeUI(type);
+  document.getElementById('txnCategory').value = '';
+  document.getElementById('catSearchInput').value = '';
+  document.getElementById('inlineNewCat').style.display = 'none';
+  renderCatSearchOptions('');
+}
+
+/* -- Category search-select -- */
+function renderCatSearchOptions(filterText){
+  const host = document.getElementById('catSearchOptions');
+  const q = (filterText || '').trim().toLowerCase();
+  const list = catSearchPool.filter(c => c.name.toLowerCase().includes(q));
+  let html = list.map(c => `<div class="ss-option" onclick="selectCategory('${c.id}')">
+      <span class="radio-dot"></span><span style="color:${c.type==='income'?'var(--income)':'var(--expense)'}">${esc(c.name)}</span></div>`).join('');
+  if(!list.length) html += `<div class="ss-empty">No matching category</div>`;
+  html += `<div class="ss-option ss-add-new" onclick="selectCategory('__new__')">+ Add new category…</div>`;
+  host.innerHTML = html;
+}
+function openCatSearchList(){
+  document.getElementById('catSearchList').style.display = 'block';
+  renderCatSearchOptions(document.getElementById('catSearchInput').value);
+}
+function toggleCatSearchList(){
+  const el = document.getElementById('catSearchList');
+  if(el.style.display === 'none') openCatSearchList(); else el.style.display = 'none';
+}
+function filterCatSearch(){ openCatSearchList(); }
+function selectCategory(id){
+  document.getElementById('catSearchList').style.display = 'none';
+  document.getElementById('txnCategory').value = id;
+  if(id === '__new__'){
+    document.getElementById('catSearchInput').value = '';
+    document.getElementById('inlineNewCat').style.display = 'block';
+  } else {
+    const c = catById(id);
+    document.getElementById('catSearchInput').value = c ? c.name : '';
+    document.getElementById('inlineNewCat').style.display = 'none';
+  }
+}
+
+/* -- Payment Mode search-select -- */
+function togglePaySearchList(){
+  const el = document.getElementById('paySearchList');
+  el.style.display = el.style.display === 'none' ? 'block' : 'none';
+}
+function selectPayMode(v){
+  document.getElementById('txnPayType').value = v;
+  document.getElementById('paySearchInput').value = v === 'cash' ? 'Cash' : 'Bank';
+  document.getElementById('paySearchList').style.display = 'none';
+}
+
+/* -- Date calendar dropdown -- */
+function toggleDatePicker(){
+  const pop = document.getElementById('datePickerPop');
+  const opening = pop.style.display === 'none';
+  if(opening){
+    const iso = document.getElementById('txnDate').value || defaultEntryDate();
+    const [y,m] = iso.split('-').map(Number);
+    dpViewYear = y; dpViewMonth = m - 1;
+    renderDatePicker();
+  }
+  pop.style.display = opening ? 'block' : 'none';
+}
+function dpChangeMonth(d){
+  dpViewMonth += d;
+  if(dpViewMonth < 0){ dpViewMonth = 11; dpViewYear--; }
+  if(dpViewMonth > 11){ dpViewMonth = 0; dpViewYear++; }
+  renderDatePicker();
+}
+function renderDatePicker(){
+  document.getElementById('dpMonthLabel').textContent = MONTH_FULL[dpViewMonth] + ' ' + dpViewYear;
+  const firstDow = new Date(dpViewYear, dpViewMonth, 1).getDay();
+  const dim = daysInMonth(dpViewYear, dpViewMonth);
+  const selectedIso = document.getElementById('txnDate').value;
+  let html = '';
+  for(let i = 0; i < firstDow; i++) html += '<span></span>';
+  for(let d = 1; d <= dim; d++){
+    const iso = `${dpViewYear}-${String(dpViewMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    html += `<button type="button" class="dp-day${iso===selectedIso?' sel':''}" onclick="pickDate('${iso}')">${d}</button>`;
+  }
+  document.getElementById('datePickerGrid').innerHTML = html;
+}
+function pickDate(iso){
+  document.getElementById('txnDate').value = iso;
+  document.getElementById('dateDisplayText').textContent = fmtDateShort(iso);
+  document.getElementById('datePickerPop').style.display = 'none';
+}
+
+/* close any open dropdown when clicking outside it */
+document.addEventListener('click', e => {
+  if(!e.target.closest('#catSearchSelect')){ const el = document.getElementById('catSearchList'); if(el) el.style.display = 'none'; }
+  if(!e.target.closest('#paySearchSelect')){ const el = document.getElementById('paySearchList'); if(el) el.style.display = 'none'; }
+  if(!e.target.closest('#dateFieldWrap')){ const el = document.getElementById('datePickerPop'); if(el) el.style.display = 'none'; }
+});
+
+function openTxnModal(id, typeHint){
   refreshGroupList();
-  fillCatOptions();
   document.getElementById('newCatName').value  = '';
-  document.getElementById('newCatType').value  = '';
   document.getElementById('newCatGroup').value = '';
+  document.getElementById('inlineNewCat').style.display = 'none';
+  document.getElementById('catSearchList').style.display = 'none';
+  document.getElementById('paySearchList').style.display = 'none';
+  document.getElementById('datePickerPop').style.display = 'none';
+
   if(id){
     const t = transactions.find(x => x.id === id);
-    document.getElementById('txnModalTitle').textContent = 'Edit Entry';
+    const c = catById(t.categoryId);
+    setEntryTypeUI(c ? c.type : (typeHint || 'expense'));
+    document.getElementById('newCatType').disabled = false;
     document.getElementById('txnId').value = t.id;
-    fillCatOptions(t.categoryId);
-    document.getElementById('txnDate').value   = t.date;
+    document.getElementById('txnCategory').value = t.categoryId;
+    document.getElementById('catSearchInput').value = c ? c.name : '';
+    document.getElementById('txnDate').value = t.date;
+    document.getElementById('dateDisplayText').textContent = fmtDateShort(t.date);
     document.getElementById('txnAmount').value = t.amount;
     document.getElementById('txnDesc').value   = t.description || '';
     document.getElementById('txnRef').value    = t.ref   || '';
     document.getElementById('txnVc').value     = t.vcNo  || '';
     document.getElementById('txnPayType').value = t.paymentType;
+    document.getElementById('paySearchInput').value = t.paymentType === 'cash' ? 'Cash' : t.paymentType === 'bank' ? 'Bank' : '';
   } else {
-    document.getElementById('txnModalTitle').textContent = 'Add Entry';
-    document.getElementById('txnId').value     = '';
-    document.getElementById('txnDate').value   = defaultEntryDate();
+    setEntryTypeUI(typeHint || 'income');
+    document.getElementById('txnId').value = '';
+    document.getElementById('txnCategory').value = '';
+    document.getElementById('catSearchInput').value = '';
+    const d = defaultEntryDate();
+    document.getElementById('txnDate').value = d;
+    document.getElementById('dateDisplayText').textContent = fmtDateShort(d);
     document.getElementById('txnAmount').value = '';
     document.getElementById('txnDesc').value   = '';
     document.getElementById('txnRef').value    = '';
     document.getElementById('txnVc').value     = '';
     document.getElementById('txnPayType').value = '';
+    document.getElementById('paySearchInput').value = '';
   }
   document.getElementById('txnOverlay').classList.add('active');
 }
@@ -737,7 +839,7 @@ async function saveTxn(){
   if(!categoryId){ showToast('Choose a category.'); return; }
   if(!date){ showToast('Pick a date.'); return; }
   if(isNaN(amount) || amount <= 0){ showToast('Enter an amount greater than zero.'); return; }
-  if(!pay){ showToast('Choose cash or bank.'); return; }
+  if(!pay){ showToast('Choose a payment mode.'); return; }
 
   /* Combined flow: create the category first if "+ Add new category…" was chosen */
   if(categoryId === '__new__'){

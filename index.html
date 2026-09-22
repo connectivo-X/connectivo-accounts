@@ -98,6 +98,11 @@
   .btn-primary{background:var(--btn);color:var(--ink)}
   .btn-primary:hover{background:var(--btn-hover)}
   .btn-gold{background:var(--btn);color:var(--ink)}
+  .btn-cashin,.btn-cashout{border-radius:999px;padding:10px 20px;font-weight:700;color:#fff;border:none}
+  .btn-cashin{background:var(--income)}
+  .btn-cashin:hover{background:#255C41}
+  .btn-cashout{background:var(--expense)}
+  .btn-cashout:hover{background:#8B3527}
   .btn-gold:hover{background:var(--btn-hover)}
   .btn-ghost{background:transparent;color:var(--ink);border-color:var(--rule-strong)}
   .btn-ghost:hover{background:#EEF2EE}
@@ -176,6 +181,61 @@
   .empty-state .big{font-family:'Lora',serif;font-size:16px;color:var(--ink);margin-bottom:6px}
 
   /* ==== Modals ==== */
+  /* ==== Side panel (Add Cash In / Cash Out) ==== */
+  .side-overlay{position:fixed;inset:0;background:rgba(20,30,25,.45);display:none;z-index:50}
+  .side-overlay.active{display:block}
+  .side-panel{position:fixed;top:0;right:0;height:100%;width:420px;max-width:92vw;background:var(--paper);
+    box-shadow:-10px 0 30px rgba(0,0,0,.18);display:flex;flex-direction:column;
+    transform:translateX(100%);transition:transform .22s ease}
+  .side-overlay.active .side-panel{transform:translateX(0)}
+  .panel-head{padding:20px 22px 16px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--rule)}
+  .panel-head h3{font-size:19px;color:var(--income)}
+  .panel-toggle{display:flex;gap:10px;padding:16px 22px 0}
+  .toggle-btn{padding:8px 22px;border-radius:999px;border:1.5px solid var(--rule-strong);background:#fff;
+    font-weight:700;font-size:13.5px;cursor:pointer;color:var(--ink)}
+  .toggle-btn.toggle-in.active{background:var(--income);border-color:var(--income);color:#fff}
+  .toggle-btn.toggle-out.active{background:var(--expense);border-color:var(--expense);color:#fff}
+  .panel-body{flex:1;overflow-y:auto;padding:18px 22px}
+  .panel-foot{padding:16px 22px;border-top:1px solid var(--rule)}
+  .btn-save-pill{width:100%;padding:13px;border-radius:8px;background:var(--btn);color:var(--ink);
+    border:none;font-weight:700;font-size:15px;cursor:pointer}
+  .btn-save-pill:hover{background:var(--btn-hover)}
+  .req{color:var(--expense)}
+  .info-icon{color:var(--ink-soft, var(--ink));cursor:help;font-size:13px}
+  .field-label-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
+  .field-label-row label{margin-bottom:0}
+  .gear-btn{background:none;border:none;cursor:pointer;color:var(--menu);font-size:15px;padding:2px}
+
+  /* date display + calendar dropdown */
+  .date-display{width:100%;display:flex;align-items:center;gap:8px;padding:9px 11px;border:1px solid var(--rule-strong);
+    border-radius:var(--radius);background:#fff;cursor:pointer;font-size:14px;color:var(--ink);text-align:left}
+  .date-display svg{color:var(--menu);flex-shrink:0}
+  .date-picker-pop{position:absolute;top:calc(100% + 4px);left:0;z-index:20;background:#fff;border:1px solid var(--rule-strong);
+    border-radius:8px;box-shadow:0 10px 30px rgba(0,0,0,.15);padding:12px;width:260px}
+  .dp-nav{display:flex;align-items:center;justify-content:space-between;font-weight:700;font-size:13.5px;margin-bottom:8px}
+  .dp-nav-btn{background:none;border:none;cursor:pointer;font-size:16px;color:var(--menu);padding:2px 8px}
+  .dp-weekdays{display:grid;grid-template-columns:repeat(7,1fr);font-size:11px;color:var(--ink-soft, var(--ink));
+    text-align:center;margin-bottom:4px}
+  .dp-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px}
+  .dp-day{border:none;background:none;padding:6px 0;font-size:12.5px;cursor:pointer;border-radius:4px;color:var(--ink)}
+  .dp-day:hover{background:var(--header-cell)}
+  .dp-day.sel{background:var(--menu);color:#fff;font-weight:700}
+
+  /* search-select (Category / Payment Mode) */
+  .search-select{position:relative}
+  .ss-input-wrap{display:flex;align-items:center;border:1px solid var(--rule-strong);border-radius:var(--radius);background:#fff}
+  .ss-input-wrap input{flex:1;border:none;padding:9px 11px;font-size:14px;background:transparent;color:var(--ink)}
+  .ss-input-wrap input:focus{outline:none}
+  .ss-arrow{background:none;border:none;border-left:1px solid var(--rule);padding:0 12px;cursor:pointer;color:var(--ink-soft, var(--ink))}
+  .ss-list{position:absolute;top:calc(100% + 4px);left:0;right:0;z-index:20;background:#fff;border:1px solid var(--rule-strong);
+    border-radius:8px;box-shadow:0 10px 30px rgba(0,0,0,.15);max-height:220px;overflow-y:auto;padding:8px 0}
+  .ss-list-label{font-size:11px;font-weight:700;color:var(--menu);padding:4px 14px 8px}
+  .ss-option{display:flex;align-items:center;gap:10px;padding:8px 14px;font-size:13.5px;cursor:pointer;color:var(--ink)}
+  .ss-option:hover{background:var(--header-cell)}
+  .ss-option.ss-add-new{color:var(--menu);font-weight:600;border-top:1px solid var(--rule);margin-top:4px}
+  .ss-empty{padding:10px 14px;font-size:13px;color:var(--ink-soft, var(--ink))}
+  .radio-dot{width:14px;height:14px;border-radius:50%;border:1.5px solid var(--rule-strong);flex-shrink:0}
+
   .overlay{position:fixed;inset:0;background:rgba(20,30,25,.45);display:none;align-items:center;justify-content:center;z-index:50;padding:20px}
   .overlay.active{display:flex}
   .modal{background:var(--paper);border-radius:8px;width:100%;max-width:420px;box-shadow:0 20px 50px rgba(0,0,0,.25);overflow:hidden}
@@ -188,11 +248,6 @@
   .field input,.field select{width:100%;padding:9px 11px;border:1px solid var(--rule-strong);border-radius:var(--radius);
     font-family:inherit;font-size:14px;background:#fff;color:var(--ink)}
   .field input:focus,.field select:focus{outline:2px solid var(--menu);outline-offset:1px}
-  .radio-row{display:flex;gap:10px}
-  .radio-opt{flex:1;border:1px solid var(--rule-strong);border-radius:var(--radius);padding:10px;text-align:center;
-    cursor:pointer;font-size:13.5px;font-weight:600;color:var(--ink)}
-  .radio-opt input{display:none}
-  .radio-opt.checked{border-color:var(--menu);background:var(--header-cell);color:var(--ink)}
   .close-x{background:none;border:none;font-size:20px;line-height:1;cursor:pointer;color:var(--ink)}
   .helper{font-size:12px;color:var(--ink);margin-top:4px}
   .toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:var(--menu);color:#fff;
@@ -210,6 +265,8 @@
     .main-area{padding:18px 14px 50px}
     .summary-row{grid-template-columns:repeat(2,1fr)}
     .report-top{grid-template-columns:1fr}
+    .side-panel{width:100%;max-width:100%}
+    .date-picker-pop{width:calc(100vw - 60px)}
   }
 </style>
 </head>
@@ -257,7 +314,7 @@
 
   <div class="app-body">
     <nav class="sidebar">
-      <button class="add-entry-btn" onclick="openTxnModal()">+ Add Entry</button>
+      <button class="add-entry-btn" onclick="openCatModal()">+ Add Category</button>
       <div class="side-label">MENU</div>
       <button class="side-btn active" data-tab="cashbook" onclick="switchTab('cashbook')">Cash Book</button>
       <button class="side-btn" data-tab="report" onclick="switchTab('report')">Expense Report</button>
@@ -269,7 +326,10 @@
       <div class="tab-panel active" id="panel-cashbook">
         <div class="section-head">
           <h2>Cash &amp; Bank Book</h2>
-          <div class="head-actions"><button class="btn btn-gold" onclick="openTxnModal()">+ New Entry</button></div>
+          <div class="head-actions">
+            <button class="btn btn-cashin" onclick="openTxnModal(null,'income')">+ Cash In</button>
+            <button class="btn btn-cashout" onclick="openTxnModal(null,'expense')">&minus; Cash Out</button>
+          </div>
         </div>
 
         <div class="filter-bar">
@@ -357,12 +417,62 @@
 </div>
 
 <!-- ===== Transaction modal (combined Add Entry) ===== -->
-<div class="overlay" id="txnOverlay">
-  <div class="modal">
-    <div class="modal-head"><h3 id="txnModalTitle">Add Entry</h3><button class="close-x" onclick="closeTxnModal()">&times;</button></div>
-    <div class="modal-body">
+<div class="side-overlay" id="txnOverlay">
+  <div class="side-panel">
+    <div class="panel-head">
+      <h3 id="txnModalTitle">Add Cash In Entry</h3>
+      <button class="close-x" onclick="closeTxnModal()">&times;</button>
+    </div>
+
+    <div class="panel-toggle">
+      <button type="button" class="toggle-btn toggle-in active" id="toggleCashIn" onclick="switchEntryType('income')">Cash In</button>
+      <button type="button" class="toggle-btn toggle-out" id="toggleCashOut" onclick="switchEntryType('expense')">Cash Out</button>
+    </div>
+
+    <div class="panel-body">
       <input type="hidden" id="txnId">
-      <div class="field"><label>Category</label><select id="txnCategory" onchange="handleTxnCategoryChange()"></select></div>
+      <input type="hidden" id="txnEntryType">
+      <input type="hidden" id="txnDate">
+      <input type="hidden" id="txnCategory">
+      <input type="hidden" id="txnPayType">
+
+      <div class="field-row">
+        <div class="field" id="dateFieldWrap" style="position:relative">
+          <label>Date <span class="req">*</span></label>
+          <button type="button" class="date-display" id="dateDisplayBtn" onclick="toggleDatePicker()">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+            <span id="dateDisplayText">22 Sep, 2026</span>
+          </button>
+          <div class="date-picker-pop" id="datePickerPop" style="display:none">
+            <div class="dp-nav">
+              <button type="button" class="dp-nav-btn" onclick="dpChangeMonth(-1)">&lsaquo;</button>
+              <span id="dpMonthLabel">September 2026</span>
+              <button type="button" class="dp-nav-btn" onclick="dpChangeMonth(1)">&rsaquo;</button>
+            </div>
+            <div class="dp-weekdays"><span>Su</span><span>Mo</span><span>Tu</span><span>We</span><span>Th</span><span>Fr</span><span>Sa</span></div>
+            <div class="dp-grid" id="datePickerGrid"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Amount <span class="req">*</span></label>
+        <input type="number" id="txnAmount" placeholder="0" min="0" step="0.01" onwheel="this.blur()">
+      </div>
+
+      <div class="field">
+        <div class="field-label-row"><label>Category</label><button type="button" class="gear-btn" onclick="openCatModal()" title="Manage categories">&#9881;</button></div>
+        <div class="search-select" id="catSearchSelect">
+          <div class="ss-input-wrap">
+            <input type="text" id="catSearchInput" placeholder="Search or Select" autocomplete="off" oninput="filterCatSearch()" onfocus="openCatSearchList()">
+            <button type="button" class="ss-arrow" onclick="toggleCatSearchList()">&#9662;</button>
+          </div>
+          <div class="ss-list" id="catSearchList" style="display:none">
+            <div class="ss-list-label">In This Book</div>
+            <div id="catSearchOptions"></div>
+          </div>
+        </div>
+      </div>
 
       <div id="inlineNewCat" style="display:none;border:1px dashed var(--rule-strong);border-radius:var(--radius);padding:12px;margin-bottom:16px">
         <div class="field"><label>New category name <span style="color:var(--expense)">*</span></label>
@@ -378,26 +488,34 @@
           <input type="text" id="newCatGroup" placeholder="e.g. Utilities" list="groupList"></div>
       </div>
 
-      <div class="field"><label>Date</label><input type="date" id="txnDate"></div>
-      <div class="field"><label>Amount</label><input type="number" id="txnAmount" placeholder="0" min="0" step="0.01"></div>
       <div class="field">
-        <label>Amount type <span style="color:var(--expense)">*</span></label>
-        <select id="txnPayType" required>
-          <option value="" disabled selected>Select cash or bank…</option>
-          <option value="cash">Cash</option>
-          <option value="bank">Bank</option>
-        </select>
+        <label>Payment Mode</label>
+        <div class="search-select" id="paySearchSelect">
+          <div class="ss-input-wrap">
+            <input type="text" id="paySearchInput" placeholder="Search or Select" readonly onclick="togglePaySearchList()">
+            <button type="button" class="ss-arrow" onclick="togglePaySearchList()">&#9662;</button>
+          </div>
+          <div class="ss-list" id="paySearchList" style="display:none">
+            <div class="ss-list-label">In This Book</div>
+            <div class="ss-option" onclick="selectPayMode('cash')"><span class="radio-dot"></span>Cash</div>
+            <div class="ss-option" onclick="selectPayMode('bank')"><span class="radio-dot"></span>Bank</div>
+          </div>
+        </div>
       </div>
-      <div class="field"><label>Head of account (optional note)</label><input type="text" id="txnDesc" placeholder="e.g. paid to City Electric"></div>
+
+      <div class="field">
+        <label>Remarks</label>
+        <input type="text" id="txnDesc" placeholder="e.g. Enter Details (Name, Bill No, Item Name, Quantity etc)">
+      </div>
       <div class="field" style="display:flex;gap:12px;margin-bottom:0">
         <div style="flex:1"><label>Ref</label><input type="text" id="txnRef" placeholder="—"></div>
         <div style="flex:1"><label>Vc No.</label><input type="text" id="txnVc" placeholder="—"></div>
       </div>
       <datalist id="groupList"></datalist>
     </div>
-    <div class="modal-foot">
-      <button class="btn btn-ghost" onclick="closeTxnModal()">Cancel</button>
-      <button class="btn btn-primary" onclick="saveTxn()">Save entry</button>
+
+    <div class="panel-foot">
+      <button class="btn-save-pill" onclick="saveTxn()">Save</button>
     </div>
   </div>
 </div>
