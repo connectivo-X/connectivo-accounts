@@ -199,6 +199,11 @@ function renderLedger(){
     b.classList.toggle('active', Number(b.dataset.cbmonth) === cbMonth));
   document.getElementById('cbMonthTitle').textContent = `Month Of ${MONTH_FULL[cbMonth]} - ${cbYear}`;
 
+  if(isFilterActive('cb')){
+    renderFilteredTable('cb', 'ledgerHost');
+    return;
+  }
+
   const { bd, receipts, payments, drCash, drBank, crCash, crBank, cdCash, cdBank } = getLedgerData(cbYear, cbMonth);
 
   const MIN_ROWS = 10;
@@ -216,16 +221,16 @@ function renderLedger(){
       <tr class="sub-head"><th>Cash</th><th>Bank</th><th>Cash</th><th>Bank</th></tr>
     </thead><tbody>`;
 
-  /* Balance B/D sits on the Dr. side of the first row */
+  /* Balance B/D sits alone on its own row — the Cr. side stays blank so no category crowds in beside it */
   html += `<tr class="bd-row">
     <td class="date-c">${fmtDate(`${cbYear}-${String(cbMonth+1).padStart(2,'0')}-01`)}</td>
     <td class="head-acct">Balance B/D</td><td></td><td></td>
     <td class="num">${cell(bd.cash)}</td><td class="num">${cell(bd.bank)}</td>
-    ${payments[0] ? ledgerSide(payments[0], true) : BLANK_CR}</tr>`;
+    ${BLANK_CR}</tr>`;
 
   for(let i = 0; i < rows; i++){
     const r = receipts[i];
-    const p = payments[i+1];
+    const p = payments[i];
     if(!r && !p) html += `<tr class="blank-row">${BLANK_DR}${BLANK_CR}</tr>`;
     else html += `<tr>${r ? ledgerSide(r, false) : BLANK_DR}${p ? ledgerSide(p, true) : BLANK_CR}</tr>`;
   }
@@ -292,6 +297,14 @@ function groupedCats(type){
 
 function renderReport(){
   document.getElementById('yearLabel').textContent = reportYear;
+
+  if(isFilterActive('rep')){
+    document.getElementById('reportTitle').textContent = 'Filtered Transactions';
+    renderFilteredTable('rep', 'gridHost');
+    updateReportTotals(reportPeriod === 'summary');
+    return;
+  }
+
   const isSummary = reportPeriod === 'summary';
   const cols = isSummary
     ? MONTHS.map((m,i) => ({ label:m, idx:i }))
@@ -397,8 +410,7 @@ function handleDurationChange(prefix){
   if(!isCustom) handleFilterChange(prefix);
 }
 function handleFilterChange(prefix){
-  if(isFilterActive(prefix)) openFilterResultsPanel(prefix);
-  else closeFilterResultsPanel();
+  if(prefix === 'cb') renderLedger(); else renderReport();
 }
 function resetFilters2(prefix){
   document.getElementById(prefix + 'fDuration').value = 'all';
@@ -406,7 +418,7 @@ function resetFilters2(prefix){
   document.getElementById(prefix + 'fPayMode').value = 'all';
   document.getElementById(prefix + 'fCategory').value = 'all';
   document.getElementById(prefix + 'fCustomRange').style.display = 'none';
-  closeFilterResultsPanel();
+  handleFilterChange(prefix);
 }
 
 function isFilterActive(prefix){
@@ -447,77 +459,42 @@ function getFilteredTransactions(prefix){
   }).sort((a,b) => b.date.localeCompare(a.date));
 }
 
-/* ---------- Filtered Results side panel ---------- */
-let activeFilterPrefix = null;
-let returnToFilterAfterSave = null;
-
-function openFilterResultsPanel(prefix){
-  activeFilterPrefix = prefix;
-  renderFilterResultsPanel();
-  document.getElementById('filterOverlay').classList.add('active');
-}
-function closeFilterResultsPanel(){
-  document.getElementById('filterOverlay').classList.remove('active');
-  activeFilterPrefix = null;
-}
-function refreshFilterResultsPanel(){
-  if(activeFilterPrefix) renderFilterResultsPanel();
-}
-function renderFilterResultsPanel(){
-  const list = getFilteredTransactions(activeFilterPrefix);
+/* ---------- In-place filtered table (shown inside #ledgerHost or #gridHost) ---------- */
+function renderFilteredTable(prefix, hostId){
+  const list = getFilteredTransactions(prefix);
   let inc = 0, exp = 0;
   list.forEach(t => { const c = catById(t.categoryId); if(c && c.type === 'income') inc += t.amount; else exp += t.amount; });
-  document.getElementById('frTotalIn').textContent  = fmtMoney(inc);
-  document.getElementById('frTotalOut').textContent = fmtMoney(exp);
-  const net = document.getElementById('frNet');
-  net.textContent = fmtMoney(inc - exp);
-  net.style.color = (inc - exp) < 0 ? 'var(--expense)' : 'var(--income)';
+  const net = inc - exp;
 
-  document.getElementById('frList').innerHTML = list.length
-    ? list.map(renderFilterRow).join('')
-    : '<div class="empty-state"><div class="big">No entries match</div><div>Try widening the filters.</div></div>';
-}
-function renderFilterRow(t){
-  const c = catById(t.categoryId);
-  const ty = c ? c.type : 'expense';
-  const name = c ? c.name : '(deleted category)';
-  return `<div class="fr-row">
-    <div class="fr-top">
-      <span class="tag ${ty}">${ty === 'income' ? 'Cash In' : 'Cash Out'}</span>
-      <span class="fr-date">${fmtDate(t.date)}</span>
-    </div>
-    <div class="fr-mid">
-      <span style="color:${ty==='income'?'var(--income)':'var(--expense)'};font-weight:600">${esc(name)}</span>
-      ${t.description ? `<span class="fr-desc"> — ${esc(t.description)}</span>` : ''}
-    </div>
-    <div class="fr-bottom">
-      <span class="pay-badge">${t.paymentType === 'cash' ? 'Cash' : 'Bank'}</span>
-      <span class="amt ${ty}">${ty === 'income' ? '+' : '-'}${fmtMoney(t.amount)}</span>
-      <span class="row-actions">
-        <button class="icon-btn" title="Edit" onclick="editFromFilterPanel('${t.id}')">&#9998;</button>
-        <button class="icon-btn danger" title="Delete" onclick="deleteFromFilterPanel('${t.id}')">&#128465;</button>
-      </span>
-    </div>
+  let html = `<div class="summary-row" style="grid-template-columns:repeat(3,1fr);margin-bottom:16px">
+    <div class="sum-card income"><div class="label">Total In</div><div class="val">${fmtMoney(inc)}</div></div>
+    <div class="sum-card expense"><div class="label">Total Out</div><div class="val">${fmtMoney(exp)}</div></div>
+    <div class="sum-card"><div class="label">Net</div><div class="val" style="color:${net<0?'var(--expense)':'var(--income)'}">${fmtMoney(net)}</div></div>
   </div>`;
-}
-function editFromFilterPanel(id){
-  returnToFilterAfterSave = activeFilterPrefix;
-  closeFilterResultsPanel();
-  openTxnModal(id);
-}
-function deleteFromFilterPanel(id){
-  const t = transactions.find(x => x.id === id); if(!t) return;
-  const c = catById(t.categoryId);
-  askConfirm('Delete entry',
-    `Remove the ${fmtMoney(t.amount)} entry for <strong>${esc(c ? c.name : 'this category')}</strong> dated ${fmtDate(t.date)}? This cannot be undone.`,
-    async () => {
-      const { error } = await sb.from('transactions').delete().eq('id', id);
-      if(error){ showToast('Could not delete the entry: ' + error.message); return; }
-      transactions = transactions.filter(x => x.id !== id);
-      renderAll();
-      refreshFilterResultsPanel();
-      showToast('Entry deleted');
-    });
+
+  if(!list.length){
+    html += `<div class="empty-state"><div class="big">No entries match</div><div>Try widening the filters.</div></div>`;
+  } else {
+    html += `<div class="grid-wrap"><table class="ledger" style="min-width:760px">
+      <thead><tr><th>Date</th><th>Type</th><th>Category</th><th>Description</th><th>Mode</th><th>Amount</th><th></th></tr></thead>
+      <tbody>` + list.map(t => {
+      const c = catById(t.categoryId);
+      const ty = c ? c.type : 'expense';
+      return `<tr>
+        <td class="date-c">${fmtDate(t.date)}</td>
+        <td><span class="tag ${ty}">${ty === 'income' ? 'Cash In' : 'Cash Out'}</span></td>
+        <td style="color:${ty==='income'?'var(--income)':'var(--expense)'};font-weight:600">${esc(c ? c.name : '(deleted category)')}</td>
+        <td>${esc(t.description || '—')}</td>
+        <td class="small">${t.paymentType === 'cash' ? 'Cash' : 'Bank'}</td>
+        <td class="num amt ${ty}">${ty === 'income' ? '+' : '-'}${fmtMoney(t.amount)}</td>
+        <td><div class="row-actions">
+          <button class="icon-btn" title="Edit" onclick="openTxnModal('${t.id}')">&#9998;</button>
+          <button class="icon-btn danger" title="Delete" onclick="deleteTxn('${t.id}')">&#128465;</button>
+        </div></td>
+      </tr>`;
+    }).join('') + `</tbody></table></div>`;
+  }
+  document.getElementById(hostId).innerHTML = html;
 }
 
 /* ============================================================
@@ -732,11 +709,11 @@ function ledgerRowsForSheet(year, month){
     ? [fmtDate(t.date), catNameOf(t), t.ref||'', t.vcNo||'', t.paymentType==='cash'?t.amount:'', t.paymentType==='bank'?t.amount:'']
     : ['','','','','',''];
 
-  rows.push(styleRow([firstDate, 'Balance B/D', '', '', bd.cash || '', bd.bank || '', ...sideRow(payments[0])], XLSX_BD_TINT));
+  rows.push(styleRow([firstDate, 'Balance B/D', '', '', bd.cash || '', bd.bank || '', '', '', '', '', '', ''], XLSX_BD_TINT));
 
-  const bodyRows = Math.max(receipts.length, payments.length - 1, 1);
+  const bodyRows = Math.max(receipts.length, payments.length, 1);
   for(let i = 0; i < bodyRows; i++){
-    rows.push([...sideRow(receipts[i]), ...sideRow(payments[i + 1])]);
+    rows.push([...sideRow(receipts[i]), ...sideRow(payments[i])]);
   }
 
   rows.push(styleRow(['','','','','','', '','Sub total','','', crCash, crBank], XLSX_BD_TINT));
@@ -1238,10 +1215,6 @@ async function saveTxn(){
   const [sy,sm] = date.split('-').map(Number);
   cbYear = sy; cbMonth = sm - 1;
   renderAll(); closeTxnModal(); showToast('Entry saved');
-  if(returnToFilterAfterSave){
-    openFilterResultsPanel(returnToFilterAfterSave);
-    returnToFilterAfterSave = null;
-  }
 }
 
 function deleteTxn(id){

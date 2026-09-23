@@ -155,12 +155,6 @@
   .filter-item select{min-width:130px}
 
   /* Filtered results list rows */
-  .fr-row{border:1px solid var(--rule);border-radius:8px;padding:10px 12px;margin-bottom:8px}
-  .fr-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px}
-  .fr-date{font-size:11.5px;color:var(--ink-soft, var(--ink))}
-  .fr-mid{font-size:13.5px;margin-bottom:6px}
-  .fr-desc{color:var(--ink-soft, var(--ink));font-size:12px}
-  .fr-bottom{display:flex;align-items:center;justify-content:space-between;gap:8px}
   .tag{display:inline-block;font-size:11px;padding:2px 8px;border-radius:10px;font-weight:600}
   .tag.income{background:var(--income-bg);color:var(--income)}
   .tag.expense{background:var(--expense-bg);color:var(--expense)}
@@ -560,8 +554,6 @@
   </div>
 </div>
 
-<!-- ===== Transaction modal (combined Add Entry) ===== -->
-<!-- ===== Filtered Results side panel ===== -->
 <!-- ===== Export Transactions side panel (Cash Book) ===== -->
 <div class="side-overlay" id="exportPreviewOverlay">
   <div class="side-panel" style="width:520px">
@@ -600,23 +592,6 @@
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 3v12"/><path d="M6 11l6 6 6-6"/><path d="M4 20h16"/></svg>
         Download Report
       </button>
-    </div>
-  </div>
-</div>
-
-<div class="side-overlay" id="filterOverlay">
-  <div class="side-panel">
-    <div class="panel-head">
-      <h3 style="color:var(--menu)">Filtered Results</h3>
-      <button class="close-x" onclick="closeFilterResultsPanel()">&times;</button>
-    </div>
-    <div class="panel-body">
-      <div class="summary-row" style="grid-template-columns:repeat(3,1fr);margin-bottom:18px">
-        <div class="sum-card income"><div class="label">Total In</div><div class="val" id="frTotalIn">0</div></div>
-        <div class="sum-card expense"><div class="label">Total Out</div><div class="val" id="frTotalOut">0</div></div>
-        <div class="sum-card"><div class="label">Net</div><div class="val" id="frNet">0</div></div>
-      </div>
-      <div id="frList"></div>
     </div>
   </div>
 </div>
