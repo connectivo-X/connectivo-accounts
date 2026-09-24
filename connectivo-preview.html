@@ -427,27 +427,28 @@
           <div class="filter-item" id="cbfCustomRange" style="display:none">
             <label>Custom range</label>
             <div style="display:flex;align-items:center;gap:6px">
-              <input type="date" id="cbfStartDate" onchange="handleFilterChange('cb')">
+              <input type="date" id="cbfStartDate" >
               <span style="font-size:12px">to</span>
-              <input type="date" id="cbfEndDate" onchange="handleFilterChange('cb')">
+              <input type="date" id="cbfEndDate" >
             </div>
           </div>
           <div class="filter-item">
             <label>Type</label>
-            <select id="cbfType" onchange="handleFilterChange('cb')">
+            <select id="cbfType" >
               <option value="all">All</option><option value="income">Cash In</option><option value="expense">Cash Out</option>
             </select>
           </div>
           <div class="filter-item">
             <label>Payment Mode</label>
-            <select id="cbfPayMode" onchange="handleFilterChange('cb')">
+            <select id="cbfPayMode" >
               <option value="all">All</option><option value="cash">Cash</option><option value="bank">Bank</option>
             </select>
           </div>
           <div class="filter-item">
             <label>Categories</label>
-            <select id="cbfCategory" onchange="handleFilterChange('cb')"><option value="all">All</option></select>
+            <select id="cbfCategory" ><option value="all">All</option></select>
           </div>
+          <button class="btn btn-primary" style="padding:7px 16px" onclick="applyFilters2('cb')">Filter</button>
           <button class="btn btn-ghost" style="padding:7px 14px" onclick="resetFilters2('cb')">Reset</button>
         </div>
 
@@ -509,27 +510,28 @@
           <div class="filter-item" id="repfCustomRange" style="display:none">
             <label>Custom range</label>
             <div style="display:flex;align-items:center;gap:6px">
-              <input type="date" id="repfStartDate" onchange="handleFilterChange('rep')">
+              <input type="date" id="repfStartDate" >
               <span style="font-size:12px">to</span>
-              <input type="date" id="repfEndDate" onchange="handleFilterChange('rep')">
+              <input type="date" id="repfEndDate" >
             </div>
           </div>
           <div class="filter-item">
             <label>Type</label>
-            <select id="repfType" onchange="handleFilterChange('rep')">
+            <select id="repfType" >
               <option value="all">All</option><option value="income">Cash In</option><option value="expense">Cash Out</option>
             </select>
           </div>
           <div class="filter-item">
             <label>Payment Mode</label>
-            <select id="repfPayMode" onchange="handleFilterChange('rep')">
+            <select id="repfPayMode" >
               <option value="all">All</option><option value="cash">Cash</option><option value="bank">Bank</option>
             </select>
           </div>
           <div class="filter-item">
             <label>Categories</label>
-            <select id="repfCategory" onchange="handleFilterChange('rep')"><option value="all">All</option></select>
+            <select id="repfCategory" ><option value="all">All</option></select>
           </div>
+          <button class="btn btn-primary" style="padding:7px 16px" onclick="applyFilters2('rep')">Filter</button>
           <button class="btn btn-ghost" style="padding:7px 14px" onclick="resetFilters2('rep')">Reset</button>
         </div>
 
@@ -1184,7 +1186,6 @@ function refreshFilterCategoryOptions(){
 function handleDurationChange(prefix){
   const isCustom = document.getElementById(prefix + 'fDuration').value === 'custom';
   document.getElementById(prefix + 'fCustomRange').style.display = isCustom ? 'flex' : 'none';
-  if(!isCustom) handleFilterChange(prefix);
 }
 let activeFilterPrefix = null;
 let selectedFilterRowId = null;
@@ -1213,14 +1214,11 @@ function deleteSelectedFilterRow(){
   if(!selectedFilterRowId) return;
   deleteTxn(selectedFilterRowId);
 }
-function handleFilterChange(prefix){
-  if(isFilterActive(prefix)){
-    activeFilterPrefix = prefix;
-    renderFilteredTable(prefix, 'wideFilterHost');
-    document.getElementById('filterOverlay').classList.add('active');
-  } else if(activeFilterPrefix === prefix){
-    closeFilterPanel();
-  }
+function applyFilters2(prefix){
+  if(!isFilterActive(prefix)){ showToast('Set at least one filter first.'); return; }
+  activeFilterPrefix = prefix;
+  renderFilteredTable(prefix, 'wideFilterHost');
+  document.getElementById('filterOverlay').classList.add('active');
 }
 function closeFilterPanel(){
   document.getElementById('filterOverlay').classList.remove('active');
@@ -1232,7 +1230,7 @@ function resetFilters2(prefix){
   document.getElementById(prefix + 'fPayMode').value = 'all';
   document.getElementById(prefix + 'fCategory').value = 'all';
   document.getElementById(prefix + 'fCustomRange').style.display = 'none';
-  handleFilterChange(prefix);
+  if(activeFilterPrefix === prefix) closeFilterPanel();
 }
 
 function isFilterActive(prefix){

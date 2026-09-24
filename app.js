@@ -397,7 +397,6 @@ function refreshFilterCategoryOptions(){
 function handleDurationChange(prefix){
   const isCustom = document.getElementById(prefix + 'fDuration').value === 'custom';
   document.getElementById(prefix + 'fCustomRange').style.display = isCustom ? 'flex' : 'none';
-  if(!isCustom) handleFilterChange(prefix);
 }
 let activeFilterPrefix = null;
 let selectedFilterRowId = null;
@@ -426,14 +425,11 @@ function deleteSelectedFilterRow(){
   if(!selectedFilterRowId) return;
   deleteTxn(selectedFilterRowId);
 }
-function handleFilterChange(prefix){
-  if(isFilterActive(prefix)){
-    activeFilterPrefix = prefix;
-    renderFilteredTable(prefix, 'wideFilterHost');
-    document.getElementById('filterOverlay').classList.add('active');
-  } else if(activeFilterPrefix === prefix){
-    closeFilterPanel();
-  }
+function applyFilters2(prefix){
+  if(!isFilterActive(prefix)){ showToast('Set at least one filter first.'); return; }
+  activeFilterPrefix = prefix;
+  renderFilteredTable(prefix, 'wideFilterHost');
+  document.getElementById('filterOverlay').classList.add('active');
 }
 function closeFilterPanel(){
   document.getElementById('filterOverlay').classList.remove('active');
@@ -445,7 +441,7 @@ function resetFilters2(prefix){
   document.getElementById(prefix + 'fPayMode').value = 'all';
   document.getElementById(prefix + 'fCategory').value = 'all';
   document.getElementById(prefix + 'fCustomRange').style.display = 'none';
-  handleFilterChange(prefix);
+  if(activeFilterPrefix === prefix) closeFilterPanel();
 }
 
 function isFilterActive(prefix){
