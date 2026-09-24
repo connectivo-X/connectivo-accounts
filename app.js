@@ -383,13 +383,24 @@ function updateReportTotals(isSummary){
    Used by both the Cash Book and Expense Report tabs. `prefix` is
    'cb' or 'rep', matching each tab's own set of filter elements.
    ============================================================ */
+/* Most recent description written against this category — helps tell apart categories
+   that share a name (e.g. two "Electricity Bill" entries for Office Meter vs Main Meter) */
+function categoryHint(catId){
+  const matches = transactions.filter(t => t.categoryId === catId && t.description && t.description.trim());
+  if(!matches.length) return '';
+  return matches.sort((a,b) => b.date.localeCompare(a.date))[0].description.trim();
+}
+function categoryOptionLabel(c){
+  const hint = categoryHint(c.id);
+  return esc(c.name) + (hint ? ' — ' + esc(hint) : '');
+}
 function refreshFilterCategoryOptions(){
   ['cbfCategory','repfCategory'].forEach(id => {
     const el = document.getElementById(id);
     if(!el) return;
     const current = el.value;
     el.innerHTML = '<option value="all">All</option>' +
-      categories.map(c => `<option value="${c.id}">${esc(c.name)} (${c.type === 'income' ? 'Cash In' : 'Cash Out'})</option>`).join('');
+      categories.map(c => `<option value="${c.id}">${categoryOptionLabel(c)}</option>`).join('');
     if([...el.options].some(o => o.value === current)) el.value = current;
   });
 }
@@ -590,7 +601,7 @@ function buildExportSubControl(type){
       <input type="date" id="epDateSel" value="${new Date().toISOString().slice(0,10)}" onchange="renderExportPreview()"></div>`;
   } else if(type === 'category'){
     el.innerHTML = `<div class="filter-item"><label>Category</label>
-      <select id="epCatSel" onchange="renderExportPreview()">${categories.map(c=>`<option value="${c.id}">${esc(c.name)} (${c.type==='income'?'Cash In':'Cash Out'})</option>`).join('')}</select></div>`;
+      <select id="epCatSel" onchange="renderExportPreview()">${categories.map(c=>`<option value="${c.id}">${categoryOptionLabel(c)}</option>`).join('')}</select></div>`;
   } else if(type === 'paymode'){
     el.innerHTML = `<div class="filter-item"><label>Payment Mode</label>
       <select id="epPayModeSel" onchange="renderExportPreview()"><option value="cash">Cash</option><option value="bank">Bank</option></select></div>`;
@@ -1063,8 +1074,11 @@ function renderCatSearchOptions(filterText){
   const host = document.getElementById('catSearchOptions');
   const q = (filterText || '').trim().toLowerCase();
   const list = catSearchPool.filter(c => c.name.toLowerCase().includes(q));
-  let html = list.map(c => `<div class="ss-option" onclick="selectCategory('${c.id}')">
-      <span class="radio-dot"></span><span style="color:${c.type==='income'?'var(--income)':'var(--expense)'}">${esc(c.name)}</span></div>`).join('');
+  let html = list.map(c => {
+    const hint = categoryHint(c.id);
+    return `<div class="ss-option" onclick="selectCategory('${c.id}')">
+      <span class="radio-dot"></span><span style="color:${c.type==='income'?'var(--income)':'var(--expense)'}">${esc(c.name)}</span>${hint ? `<span style="color:var(--ink-soft, var(--ink));font-size:11.5px"> — ${esc(hint)}</span>` : ''}</div>`;
+  }).join('');
   if(!list.length) html += `<div class="ss-empty">No matching category</div>`;
   html += `<div class="ss-option ss-add-new" onclick="selectCategory('__new__')">+ Add new category…</div>`;
   host.innerHTML = html;
