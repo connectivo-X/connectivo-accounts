@@ -184,6 +184,8 @@
   .lh-month{font-family:'Lora',serif;font-size:14px;color:var(--ink);margin-top:4px;font-weight:600}
   .grid-wrap{overflow-x:auto;border:1px solid var(--rule-strong);border-radius:var(--radius);background:var(--paper)}
   table.ledger{border-collapse:collapse;width:100%;font-size:12.5px;min-width:900px}
+  .filtered-wrap{display:inline-block;max-width:100%;overflow-x:auto;border:1px solid var(--rule-strong);
+    border-radius:var(--radius);background:var(--paper)}
   table.filtered-table{border-collapse:collapse;table-layout:auto;width:auto;font-size:12.5px}
   table.filtered-table th,table.filtered-table td{border:1px solid var(--rule-strong);padding:6px 12px;
     vertical-align:middle;color:var(--ink);white-space:nowrap}
@@ -1296,7 +1298,7 @@ function renderFilteredTable(prefix, hostId){
   if(!list.length){
     html += `<div class="empty-state"><div class="big">No entries match</div><div>Try widening the filters.</div></div>`;
   } else {
-    html += `<div class="grid-wrap"><table class="filtered-table">
+    html += `<div class="filtered-wrap"><table class="filtered-table">
       <thead><tr><th>Date</th><th>Type</th><th>Category</th><th>Description</th><th>Mode</th><th>Amount</th></tr></thead>
       <tbody>` + list.map(t => {
       const c = catById(t.categoryId);
