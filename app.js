@@ -169,10 +169,11 @@ function monthTxns(year, month, type){
 function ledgerSide(t, isCr){
   const c = catById(t.categoryId);
   const name = c ? c.name : '(deleted category)';
-  const note = t.description ? `<div class="acct-note">${esc(t.description)}</div>` : '';
+  const catNote = c && c.description ? `<div class="acct-note">${esc(c.description)}</div>` : '';
+  const txnNote = t.description ? `<div class="acct-note">${esc(t.description)}</div>` : '';
   return `
     <td class="date-c${isCr ? ' mid' : ''}" data-date="${t.date}">${fmtDate(t.date)}</td>
-    <td class="head-acct"><div class="acct-line"><div><div style="color:${c && c.type==='income'?'var(--income)':'var(--expense)'}">${esc(name)}</div>${note}</div>
+    <td class="head-acct"><div class="acct-line"><div><div style="color:${c && c.type==='income'?'var(--income)':'var(--expense)'}">${esc(name)}</div>${catNote}${txnNote}</div>
       <span class="acts">
         <button class="icon-btn" title="Edit" onclick="openTxnModal('${t.id}')">&#9998;</button>
         <button class="icon-btn danger" title="Delete" onclick="deleteTxn('${t.id}')">&#128465;</button>
@@ -343,7 +344,8 @@ function renderReport(){
       }
       items.forEach(cat => {
         const vals = cols.map(c => val(cat.id, c));
-        html += `<tr class="cat-row"><td class="cat-col"><div class="cat-name-cell"><span style="color:${cat.type==='income'?'var(--income)':'var(--expense)'}">${esc(cat.name)}</span>
+        const catDescNote = cat.description ? `<div class="acct-note">${esc(cat.description)}</div>` : '';
+        html += `<tr class="cat-row"><td class="cat-col"><div class="cat-name-cell"><div><div style="color:${cat.type==='income'?'var(--income)':'var(--expense)'}">${esc(cat.name)}</div>${catDescNote}</div>
           <span class="acts">
             <button class="icon-btn" title="Edit" onclick="openCatModal('${cat.id}')">&#9998;</button>
             <button class="icon-btn danger" title="Delete" onclick="deleteCat('${cat.id}')">&#128465;</button>

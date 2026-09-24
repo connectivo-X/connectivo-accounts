@@ -232,7 +232,7 @@
   table.grid td.total-col{font-weight:700;background:#F1F7FB}
   table.grid td.zero{color:#8FA6B8}
   table.grid tbody tr.cat-row:hover td,table.grid tbody tr.cat-row:hover td.cat-col{background:#F7FAF7}
-  .cat-name-cell{display:flex;align-items:center;justify-content:space-between;gap:6px}
+  .cat-name-cell{display:flex;align-items:flex-start;justify-content:space-between;gap:6px}
   .cat-name-cell .acts{display:flex;opacity:.55;flex-shrink:0}
   tr.cat-row:hover .cat-name-cell .acts{opacity:1}
   .grid-legend{font-size:12px;color:var(--ink);margin-top:10px}
@@ -718,10 +718,7 @@
         <input type="number" id="txnAmount" placeholder="0" min="0" step="0.01" onwheel="this.blur()">
       </div>
 
-      <div class="field">
-        <label>Description</label>
-        <input type="text" id="txnDesc" placeholder="e.g. Enter Details (Name, Bill No, Item Name, Quantity etc)">
-      </div>
+      <input type="hidden" id="txnDesc">
       <div class="field" style="display:flex;gap:12px;margin-bottom:0">
         <div style="flex:1"><label>Ref</label><input type="text" id="txnRef" placeholder="—"></div>
         <div style="flex:1"><label>Vc No.</label><input type="text" id="txnVc" placeholder="—"></div>

@@ -232,7 +232,7 @@
   table.grid td.total-col{font-weight:700;background:#F1F7FB}
   table.grid td.zero{color:#8FA6B8}
   table.grid tbody tr.cat-row:hover td,table.grid tbody tr.cat-row:hover td.cat-col{background:#F7FAF7}
-  .cat-name-cell{display:flex;align-items:center;justify-content:space-between;gap:6px}
+  .cat-name-cell{display:flex;align-items:flex-start;justify-content:space-between;gap:6px}
   .cat-name-cell .acts{display:flex;opacity:.55;flex-shrink:0}
   tr.cat-row:hover .cat-name-cell .acts{opacity:1}
   .grid-legend{font-size:12px;color:var(--ink);margin-top:10px}
@@ -718,10 +718,7 @@
         <input type="number" id="txnAmount" placeholder="0" min="0" step="0.01" onwheel="this.blur()">
       </div>
 
-      <div class="field">
-        <label>Description</label>
-        <input type="text" id="txnDesc" placeholder="e.g. Enter Details (Name, Bill No, Item Name, Quantity etc)">
-      </div>
+      <input type="hidden" id="txnDesc">
       <div class="field" style="display:flex;gap:12px;margin-bottom:0">
         <div style="flex:1"><label>Ref</label><input type="text" id="txnRef" placeholder="—"></div>
         <div style="flex:1"><label>Vc No.</label><input type="text" id="txnVc" placeholder="—"></div>
@@ -977,10 +974,11 @@ function monthTxns(year, month, type){
 function ledgerSide(t, isCr){
   const c = catById(t.categoryId);
   const name = c ? c.name : '(deleted category)';
-  const note = t.description ? `<div class="acct-note">${esc(t.description)}</div>` : '';
+  const catNote = c && c.description ? `<div class="acct-note">${esc(c.description)}</div>` : '';
+  const txnNote = t.description ? `<div class="acct-note">${esc(t.description)}</div>` : '';
   return `
     <td class="date-c${isCr ? ' mid' : ''}" data-date="${t.date}">${fmtDate(t.date)}</td>
-    <td class="head-acct"><div class="acct-line"><div><div style="color:${c && c.type==='income'?'var(--income)':'var(--expense)'}">${esc(name)}</div>${note}</div>
+    <td class="head-acct"><div class="acct-line"><div><div style="color:${c && c.type==='income'?'var(--income)':'var(--expense)'}">${esc(name)}</div>${catNote}${txnNote}</div>
       <span class="acts">
         <button class="icon-btn" title="Edit" onclick="openTxnModal('${t.id}')">&#9998;</button>
         <button class="icon-btn danger" title="Delete" onclick="deleteTxn('${t.id}')">&#128465;</button>
@@ -1151,7 +1149,8 @@ function renderReport(){
       }
       items.forEach(cat => {
         const vals = cols.map(c => val(cat.id, c));
-        html += `<tr class="cat-row"><td class="cat-col"><div class="cat-name-cell"><span style="color:${cat.type==='income'?'var(--income)':'var(--expense)'}">${esc(cat.name)}</span>
+        const catDescNote = cat.description ? `<div class="acct-note">${esc(cat.description)}</div>` : '';
+        html += `<tr class="cat-row"><td class="cat-col"><div class="cat-name-cell"><div><div style="color:${cat.type==='income'?'var(--income)':'var(--expense)'}">${esc(cat.name)}</div>${catDescNote}</div>
           <span class="acts">
             <button class="icon-btn" title="Edit" onclick="openCatModal('${cat.id}')">&#9998;</button>
             <button class="icon-btn danger" title="Delete" onclick="deleteCat('${cat.id}')">&#128465;</button>
