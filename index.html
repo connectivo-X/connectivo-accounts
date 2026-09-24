@@ -671,11 +671,6 @@
       </div>
 
       <div class="field">
-        <label>Amount <span class="req">*</span></label>
-        <input type="number" id="txnAmount" placeholder="0" min="0" step="0.01" onwheel="this.blur()">
-      </div>
-
-      <div class="field">
         <div class="field-label-row"><label>Category</label><button type="button" class="gear-btn" onclick="openCatModal()" title="Manage categories">&#9881;</button></div>
         <div class="search-select" id="catSearchSelect">
           <div class="ss-input-wrap">
@@ -719,7 +714,12 @@
       </div>
 
       <div class="field">
-        <label>Remarks</label>
+        <label>Amount <span class="req">*</span></label>
+        <input type="number" id="txnAmount" placeholder="0" min="0" step="0.01" onwheel="this.blur()">
+      </div>
+
+      <div class="field">
+        <label>Description</label>
         <input type="text" id="txnDesc" placeholder="e.g. Enter Details (Name, Bill No, Item Name, Quantity etc)">
       </div>
       <div class="field" style="display:flex;gap:12px;margin-bottom:0">
@@ -736,10 +736,13 @@
 </div>
 
 <!-- ===== Category modal ===== -->
-<div class="overlay" id="catOverlay">
-  <div class="modal">
-    <div class="modal-head"><h3 id="catModalTitle">Add category</h3><button class="close-x" onclick="closeCatModal()">&times;</button></div>
-    <div class="modal-body">
+<div class="side-overlay" id="catOverlay">
+  <div class="side-panel" style="width:480px">
+    <div class="panel-head">
+      <h3 id="catModalTitle" style="color:var(--ink)">Add category</h3>
+      <button class="close-x" onclick="closeCatModal()">&times;</button>
+    </div>
+    <div class="panel-body">
       <input type="hidden" id="catId">
       <div class="field"><label>Category name</label><input type="text" id="catName" placeholder="e.g. Office Rent"></div>
       <div class="field">
@@ -751,14 +754,19 @@
         </select>
       </div>
       <div class="field">
+        <label>Description (optional)</label>
+        <input type="text" id="catDescription" placeholder="e.g. Office Meter">
+        <div class="helper">Handy when the same category name repeats — e.g. two "Electricity Bill" categories for Office Meter and Main Meter.</div>
+      </div>
+      <div class="field">
         <label>Group (optional)</label>
         <input type="text" id="catGroup" placeholder="e.g. Utilities" list="groupList">
         <div class="helper">Categories in the same group are totalled together in the report.</div>
       </div>
     </div>
-    <div class="modal-foot">
+    <div class="panel-foot" style="display:flex;justify-content:flex-end;gap:10px">
       <button class="btn btn-ghost" onclick="closeCatModal()">Cancel</button>
-      <button class="btn btn-primary" onclick="saveCat()">Save category</button>
+      <button class="btn-save-pill" style="width:auto;padding:11px 22px" onclick="saveCat()">Save category</button>
     </div>
   </div>
 </div>

@@ -9,6 +9,7 @@ create table categories (
   name text not null,
   type text not null check (type in ('income','expense')),
   group_name text default '',
+  description text default '',
   created_at timestamptz default now()
 );
 
@@ -67,3 +68,14 @@ $$ language plpgsql security definer;
 create trigger on_auth_user_created
   after insert on auth.users
   for each row execute procedure public.handle_new_user();
+
+-- 6. Table-level grants — RLS policies above control WHICH rows a
+--    logged-in user can touch; these grants control whether they can
+--    touch the table at all. Without this, every request fails with
+--    "permission denied for table ...".
+grant usage on schema public to authenticated;
+
+grant select, insert, update, delete on public.categories   to authenticated;
+grant select, insert, update, delete on public.transactions to authenticated;
+grant select, update           on public.profiles      to authenticated;
+

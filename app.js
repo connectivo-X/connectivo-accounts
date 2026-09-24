@@ -27,8 +27,8 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 /* ---------- field-name mapping ----------
    The database uses snake_case columns; the rest of this file
    uses camelCase objects, same as before Supabase was added. */
-function catFromDb(r){ return { id:r.id, name:r.name, type:r.type, group:r.group_name || '' }; }
-function catToDb(c){ return { name:c.name, type:c.type, group_name:c.group || '' }; }
+function catFromDb(r){ return { id:r.id, name:r.name, type:r.type, group:r.group_name || '', description:r.description || '' }; }
+function catToDb(c){ return { name:c.name, type:c.type, group_name:c.group || '', description:c.description || '' }; }
 function txnFromDb(r){
   return { id:r.id, categoryId:r.category_id, date:r.date, amount:Number(r.amount),
     paymentType:r.payment_type, description:r.description || '', ref:r.ref || '', vcNo:r.vc_no || '' };
@@ -391,7 +391,7 @@ function categoryHint(catId){
   return matches.sort((a,b) => b.date.localeCompare(a.date))[0].description.trim();
 }
 function categoryOptionLabel(c){
-  const hint = categoryHint(c.id);
+  const hint = (c.description && c.description.trim()) ? c.description.trim() : categoryHint(c.id);
   return esc(c.name) + (hint ? ' — ' + esc(hint) : '');
 }
 function refreshFilterCategoryOptions(){
@@ -1075,7 +1075,7 @@ function renderCatSearchOptions(filterText){
   const q = (filterText || '').trim().toLowerCase();
   const list = catSearchPool.filter(c => c.name.toLowerCase().includes(q));
   let html = list.map(c => {
-    const hint = categoryHint(c.id);
+    const hint = (c.description && c.description.trim()) ? c.description.trim() : categoryHint(c.id);
     return `<div class="ss-option" onclick="selectCategory('${c.id}')">
       <span class="radio-dot"></span><span style="color:${c.type==='income'?'var(--income)':'var(--expense)'}">${esc(c.name)}</span>${hint ? `<span style="color:var(--ink-soft, var(--ink));font-size:11.5px"> — ${esc(hint)}</span>` : ''}</div>`;
   }).join('');
@@ -1276,12 +1276,14 @@ function openCatModal(id){
     document.getElementById('catModalTitle').textContent = 'Edit category';
     document.getElementById('catId').value    = c.id;
     document.getElementById('catName').value  = c.name;
+    document.getElementById('catDescription').value = c.description || '';
     document.getElementById('catGroup').value = c.group || '';
     document.getElementById('catType').value  = c.type;
   } else {
     document.getElementById('catModalTitle').textContent = 'Add category';
     document.getElementById('catId').value    = '';
     document.getElementById('catName').value  = '';
+    document.getElementById('catDescription').value = '';
     document.getElementById('catGroup').value = '';
     document.getElementById('catType').value  = '';
   }
@@ -1292,11 +1294,12 @@ function closeCatModal(){ document.getElementById('catOverlay').classList.remove
 async function saveCat(){
   const id    = document.getElementById('catId').value;
   const name  = document.getElementById('catName').value.trim();
+  const description = document.getElementById('catDescription').value.trim();
   const group = document.getElementById('catGroup').value.trim();
   const ty    = document.getElementById('catType').value;
   if(!name){ showToast('Enter a category name.'); return; }
   if(!ty){ showToast('Select a type — Income or Expense.'); return; }
-  const row = catToDb({ name, group, type: ty });
+  const row = catToDb({ name, group, type: ty, description });
   if(id){
     const { data, error } = await sb.from('categories').update(row).eq('id', id).select().single();
     if(error){ showToast('Could not save the category: ' + error.message); return; }
