@@ -125,7 +125,10 @@ function switchTab(t){
   document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
   document.getElementById('panel-' + t).classList.add('active');
 }
-function renderAll(){ renderLedger(); renderReport(); refreshGroupList(); refreshFilterCategoryOptions(); }
+function renderAll(){
+  renderLedger(); renderReport(); refreshGroupList(); refreshFilterCategoryOptions();
+  if(activeFilterPrefix) renderFilteredTable(activeFilterPrefix, 'wideFilterHost');
+}
 
 /* ============================================================
    CASH BOOK — Dr. / Cr. ledger
@@ -198,11 +201,6 @@ function renderLedger(){
   document.querySelectorAll('.period-btn[data-cbmonth]').forEach(b =>
     b.classList.toggle('active', Number(b.dataset.cbmonth) === cbMonth));
   document.getElementById('cbMonthTitle').textContent = `Month Of ${MONTH_FULL[cbMonth]} - ${cbYear}`;
-
-  if(isFilterActive('cb')){
-    renderFilteredTable('cb', 'ledgerHost');
-    return;
-  }
 
   const { bd, receipts, payments, drCash, drBank, crCash, crBank, cdCash, cdBank } = getLedgerData(cbYear, cbMonth);
 
@@ -297,14 +295,6 @@ function groupedCats(type){
 
 function renderReport(){
   document.getElementById('yearLabel').textContent = reportYear;
-
-  if(isFilterActive('rep')){
-    document.getElementById('reportTitle').textContent = 'Filtered Transactions';
-    renderFilteredTable('rep', 'gridHost');
-    updateReportTotals(reportPeriod === 'summary');
-    return;
-  }
-
   const isSummary = reportPeriod === 'summary';
   const cols = isSummary
     ? MONTHS.map((m,i) => ({ label:m, idx:i }))
@@ -409,8 +399,19 @@ function handleDurationChange(prefix){
   document.getElementById(prefix + 'fCustomRange').style.display = isCustom ? 'flex' : 'none';
   if(!isCustom) handleFilterChange(prefix);
 }
+let activeFilterPrefix = null;
 function handleFilterChange(prefix){
-  if(prefix === 'cb') renderLedger(); else renderReport();
+  if(isFilterActive(prefix)){
+    activeFilterPrefix = prefix;
+    renderFilteredTable(prefix, 'wideFilterHost');
+    document.getElementById('filterOverlay').classList.add('active');
+  } else if(activeFilterPrefix === prefix){
+    closeFilterPanel();
+  }
+}
+function closeFilterPanel(){
+  document.getElementById('filterOverlay').classList.remove('active');
+  activeFilterPrefix = null;
 }
 function resetFilters2(prefix){
   document.getElementById(prefix + 'fDuration').value = 'all';
