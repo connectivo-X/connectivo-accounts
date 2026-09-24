@@ -400,6 +400,32 @@ function handleDurationChange(prefix){
   if(!isCustom) handleFilterChange(prefix);
 }
 let activeFilterPrefix = null;
+let selectedFilterRowId = null;
+
+function selectFilterRow(id){
+  selectedFilterRowId = (selectedFilterRowId === id) ? null : id;
+  document.querySelectorAll('#wideFilterHost tr.fr-selected').forEach(r => r.classList.remove('fr-selected'));
+  if(selectedFilterRowId){
+    const row = document.querySelector(`#wideFilterHost tr[data-id="${selectedFilterRowId}"]`);
+    if(row) row.classList.add('fr-selected');
+  }
+  updateFilterActionButtons();
+}
+function updateFilterActionButtons(){
+  const has = !!selectedFilterRowId;
+  const editBtn = document.getElementById('filterEditBtn');
+  const delBtn = document.getElementById('filterDeleteBtn');
+  if(editBtn) editBtn.disabled = !has;
+  if(delBtn) delBtn.disabled = !has;
+}
+function editSelectedFilterRow(){
+  if(!selectedFilterRowId) return;
+  openTxnModal(selectedFilterRowId);
+}
+function deleteSelectedFilterRow(){
+  if(!selectedFilterRowId) return;
+  deleteTxn(selectedFilterRowId);
+}
 function handleFilterChange(prefix){
   if(isFilterActive(prefix)){
     activeFilterPrefix = prefix;
@@ -476,26 +502,24 @@ function renderFilteredTable(prefix, hostId){
   if(!list.length){
     html += `<div class="empty-state"><div class="big">No entries match</div><div>Try widening the filters.</div></div>`;
   } else {
-    html += `<div class="grid-wrap"><table class="ledger" style="min-width:760px">
-      <thead><tr><th>Date</th><th>Type</th><th>Category</th><th>Description</th><th>Mode</th><th>Amount</th><th></th></tr></thead>
+    html += `<div class="grid-wrap"><table class="ledger" style="min-width:680px">
+      <thead><tr><th>Date</th><th>Type</th><th>Category</th><th>Description</th><th>Mode</th><th>Amount</th></tr></thead>
       <tbody>` + list.map(t => {
       const c = catById(t.categoryId);
       const ty = c ? c.type : 'expense';
-      return `<tr>
+      return `<tr class="fr-selectable" data-id="${t.id}" onclick="selectFilterRow('${t.id}')">
         <td class="date-c">${fmtDate(t.date)}</td>
         <td><span class="tag ${ty}">${ty === 'income' ? 'Cash In' : 'Cash Out'}</span></td>
         <td style="color:${ty==='income'?'var(--income)':'var(--expense)'};font-weight:600">${esc(c ? c.name : '(deleted category)')}</td>
         <td>${esc(t.description || '—')}</td>
         <td class="small">${t.paymentType === 'cash' ? 'Cash' : 'Bank'}</td>
         <td class="num amt ${ty}">${ty === 'income' ? '+' : '-'}${fmtMoney(t.amount)}</td>
-        <td><div class="row-actions">
-          <button class="icon-btn" title="Edit" onclick="openTxnModal('${t.id}')">&#9998;</button>
-          <button class="icon-btn danger" title="Delete" onclick="deleteTxn('${t.id}')">&#128465;</button>
-        </div></td>
       </tr>`;
     }).join('') + `</tbody></table></div>`;
   }
   document.getElementById(hostId).innerHTML = html;
+  selectedFilterRowId = null;
+  updateFilterActionButtons();
 }
 
 /* ============================================================
