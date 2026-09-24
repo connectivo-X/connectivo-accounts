@@ -498,7 +498,7 @@ function renderFilteredTable(prefix, hostId){
   if(!list.length){
     html += `<div class="empty-state"><div class="big">No entries match</div><div>Try widening the filters.</div></div>`;
   } else {
-    html += `<div class="grid-wrap"><table class="ledger" style="min-width:680px">
+    html += `<div class="grid-wrap"><table class="filtered-table">
       <thead><tr><th>Date</th><th>Type</th><th>Category</th><th>Description</th><th>Mode</th><th>Amount</th></tr></thead>
       <tbody>` + list.map(t => {
       const c = catById(t.categoryId);

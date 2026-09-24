@@ -184,6 +184,15 @@
   .lh-month{font-family:'Lora',serif;font-size:14px;color:var(--ink);margin-top:4px;font-weight:600}
   .grid-wrap{overflow-x:auto;border:1px solid var(--rule-strong);border-radius:var(--radius);background:var(--paper)}
   table.ledger{border-collapse:collapse;width:100%;font-size:12.5px;min-width:900px}
+  table.filtered-table{border-collapse:collapse;table-layout:auto;width:auto;font-size:12.5px}
+  table.filtered-table th,table.filtered-table td{border:1px solid var(--rule-strong);padding:6px 12px;
+    vertical-align:middle;color:var(--ink);white-space:nowrap}
+  table.filtered-table thead th{background:var(--header-cell);color:var(--ink);font-weight:700;
+    font-size:11px;text-align:left}
+  table.filtered-table td.date-c{font-variant-numeric:tabular-nums}
+  table.filtered-table td.num{text-align:right;font-variant-numeric:tabular-nums}
+  table.filtered-table td.small{text-align:center}
+  table.filtered-table tbody tr:hover td{background:#F7FAF7}
   table.ledger th,table.ledger td{border:2px solid var(--rule-strong);padding:5px 7px;vertical-align:middle;color:var(--ink)}
   table.ledger td{font-weight:500}
   table.ledger .drcr th{background:var(--menu);color:#fff;font-family:'Lora',serif;font-size:14.5px;
@@ -1287,7 +1296,7 @@ function renderFilteredTable(prefix, hostId){
   if(!list.length){
     html += `<div class="empty-state"><div class="big">No entries match</div><div>Try widening the filters.</div></div>`;
   } else {
-    html += `<div class="grid-wrap"><table class="ledger" style="min-width:680px">
+    html += `<div class="grid-wrap"><table class="filtered-table">
       <thead><tr><th>Date</th><th>Type</th><th>Category</th><th>Description</th><th>Mode</th><th>Amount</th></tr></thead>
       <tbody>` + list.map(t => {
       const c = catById(t.categoryId);
