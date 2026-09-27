@@ -833,9 +833,11 @@ function exportCashBookFlatPdf(list, subtitle, filterKey){
   doc.autoTable({
     startY: titleY + 10, margin: { left: 10, right: 10 },
     head: [['Date','Category','Remark','Ref','Vc No.','Mode','Cash In','Cash Out']],
-    body, theme: 'grid', styles: { fontSize: 8, cellPadding: 1.5, lineColor: [180,190,200] },
+    body, theme: 'grid', styles: { fontSize: 8, cellPadding: 1.5, lineColor: [140,150,160], lineWidth: 0.15 },
     headStyles: { fillColor: PDF_SUBHEAD_BLUE, textColor: [20,20,20], fontStyle: 'bold', halign: 'center' },
     didParseCell: data => {
+      data.cell.styles.lineWidth = 0.15;
+      data.cell.styles.lineColor = [140,150,160];
       if(data.section === 'body' && data.row.index === body.length - 1){
         data.cell.styles.fillColor = [234,242,248];
         data.cell.styles.fontStyle = 'bold';
@@ -906,9 +908,11 @@ function exportCashBookPdf(months){
         ['Cash', 'Bank', 'Cash', 'Bank']
       ],
       body,
-      theme: 'grid', styles: { fontSize: 6.5, cellPadding: 1.2, lineColor: [180,190,200] },
+      theme: 'grid', styles: { fontSize: 6.5, cellPadding: 1.2, lineColor: [140,150,160], lineWidth: 0.15 },
       headStyles: { fillColor: PDF_SUBHEAD_BLUE, textColor: [20,20,20], fontStyle: 'bold', halign: 'center' },
       didParseCell: data => {
+        data.cell.styles.lineWidth = 0.15;
+        data.cell.styles.lineColor = [140,150,160];
         if(data.section === 'head' && data.row.index === 1){ data.cell.styles.fillColor = PDF_SUBSUB_BLUE; return; }
         if(data.section !== 'body') return;
         if(data.row.index === bdRowIdx || data.row.index === subTotalIdx) data.cell.styles.fillColor = [234,242,248];
@@ -1007,10 +1011,12 @@ function exportReportPdf(year, period){
   doc.autoTable({
     startY: titleY + 10, margin: { left: 10, right: 10 },
     head: [header], body: rows.map(r => r.map(v => typeof v === 'number' ? cell(v) : v)),
-    theme: 'grid', styles: { fontSize: 7, cellPadding: 1.3, lineColor: [180,190,200] },
+    theme: 'grid', styles: { fontSize: 7, cellPadding: 1.3, lineColor: [140,150,160], lineWidth: 0.15 },
     headStyles: { fillColor: PDF_SUBHEAD_BLUE, textColor: [20,20,20], fontStyle: 'bold', halign: 'center' },
     columnStyles: { 0: { cellWidth: 42, halign: 'left' } },
     didParseCell: data => {
+      data.cell.styles.lineWidth = 0.15;
+      data.cell.styles.lineColor = [140,150,160];
       if(data.section !== 'body') return;
       const label = String(data.row.raw[0] || '');
       if(label === 'INCOME CATEGORY' || label === 'EXPENSE CATEGORY'){
