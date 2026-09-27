@@ -860,51 +860,55 @@ function exportCashBookPdf(months){
     doc.setFont(undefined, 'normal'); doc.setFontSize(10);
     doc.text('Month Of ' + MONTH_FULL[month] + ' - ' + year, pw / 2, titleY + 6, { align: 'center' });
 
-    const margin = 10, gutter = 4;
-    const halfW = (pw - margin * 2 - gutter) / 2;
-    const leftX = margin, rightX = margin + halfW + gutter;
+    const margin = 10;
+    const contentW = pw - margin * 2;
     const bandY = titleY + 10, bandH = 8;
 
     doc.setFillColor(...PDF_HEAD_BLUE);
-    doc.rect(leftX, bandY, halfW, bandH, 'F');
-    doc.rect(rightX, bandY, halfW, bandH, 'F');
+    doc.rect(margin, bandY, contentW, bandH, 'F');
     doc.setTextColor(255, 255, 255); doc.setFont(undefined, 'bold'); doc.setFontSize(11);
-    doc.text('Dr.', leftX + halfW / 2, bandY + bandH / 2 + 3, { align: 'center' });
-    doc.text('Cr.', rightX + halfW / 2, bandY + bandH / 2 + 3, { align: 'center' });
+    doc.text('Dr.', margin + contentW / 4, bandY + bandH / 2 + 3, { align: 'center' });
+    doc.text('Cr.', margin + contentW * 3 / 4, bandY + bandH / 2 + 3, { align: 'center' });
 
     const firstDate = fmtDate(year + '-' + String(month + 1).padStart(2,'0') + '-01');
-    const recBody = [[firstDate, 'Balance B/D', '', '', bd.cash ? cell(bd.cash) : '', bd.bank ? cell(bd.bank) : '']]
-      .concat(receipts.map(t => [fmtDate(t.date), catNameOf(t), t.ref||'', t.vcNo||'',
-        t.paymentType==='cash'?cell(t.amount):'', t.paymentType==='bank'?cell(t.amount):'']))
-      .concat([['', 'Total', '', '', cell(drCash), cell(drBank)]]);
+    const sideRow = t => t
+      ? [fmtDate(t.date), catNameOf(t), t.ref||'', t.vcNo||'', t.paymentType==='cash'?cell(t.amount):'', t.paymentType==='bank'?cell(t.amount):'']
+      : ['','','','','',''];
 
-    const payBody = payments.map(t => [fmtDate(t.date), catNameOf(t), t.ref||'', t.vcNo||'',
-        t.paymentType==='cash'?cell(t.amount):'', t.paymentType==='bank'?cell(t.amount):''])
-      .concat([
-        ['', 'Sub total', '', '', cell(crCash), cell(crBank)],
-        ['', 'Balance C/D', '', '', cell(cdCash), cell(cdBank)],
-        ['', 'Total', '', '', cell(crCash + cdCash), cell(crBank + cdBank)],
-      ]);
+    const body = [];
+    body.push([firstDate, 'Balance B/D', '', '', bd.cash ? cell(bd.cash) : '', bd.bank ? cell(bd.bank) : '', '', '', '', '', '', '']);
+    const bodyRows = Math.max(receipts.length, payments.length, 1);
+    for(let i = 0; i < bodyRows; i++){
+      body.push([...sideRow(receipts[i]), ...sideRow(payments[i])]);
+    }
+    body.push(['', '', '', '', '', '', '', 'Sub total', '', '', cell(crCash), cell(crBank)]);
+    body.push(['', '', '', '', '', '', '', 'Balance C/D', '', '', cell(cdCash), cell(cdBank)]);
+    body.push(['', 'Total', '', '', cell(drCash), cell(drBank), '', 'Total', '', '', cell(crCash + cdCash), cell(crBank + cdBank)]);
 
-    const twoRowHead = label => [
-      [{ content:'Date', rowSpan:2 }, { content:label, rowSpan:2 }, { content:'Ref', rowSpan:2 }, { content:'Vc No.', rowSpan:2 }, { content:'Amount', colSpan:2 }],
-      ['Cash', 'Bank']
-    ];
-    const shadeSubHeader = data => { if(data.section === 'head' && data.row.index === 1) data.cell.styles.fillColor = PDF_SUBSUB_BLUE; };
-    const commonStyle = {
+    const bdRowIdx = 0;
+    const subTotalIdx = body.length - 3, cdIdx = body.length - 2, totalIdx = body.length - 1;
+
+    doc.autoTable({
+      startY: bandY + bandH, margin: { left: margin, right: margin },
+      head: [
+        [{ content:'Date', rowSpan:2 }, { content:'Received / Head Of Account', rowSpan:2 }, { content:'Ref', rowSpan:2 }, { content:'Vc No.', rowSpan:2 }, { content:'Amount', colSpan:2 },
+         { content:'Date', rowSpan:2 }, { content:'Payment / Head Of Account', rowSpan:2 }, { content:'Ref', rowSpan:2 }, { content:'Vc No.', rowSpan:2 }, { content:'Amount', colSpan:2 }],
+        ['Cash', 'Bank', 'Cash', 'Bank']
+      ],
+      body,
       theme: 'grid', styles: { fontSize: 6.5, cellPadding: 1.2, lineColor: [180,190,200] },
       headStyles: { fillColor: PDF_SUBHEAD_BLUE, textColor: [20,20,20], fontStyle: 'bold', halign: 'center' },
-      didParseCell: shadeSubHeader
-    };
-
-    doc.autoTable(Object.assign({
-      startY: bandY + bandH, margin: { left: leftX, right: pw - leftX - halfW },
-      tableWidth: halfW, head: twoRowHead('Received / Head Of Account'), body: recBody
-    }, commonStyle));
-    doc.autoTable(Object.assign({
-      startY: bandY + bandH, margin: { left: rightX, right: pw - rightX - halfW },
-      tableWidth: halfW, head: twoRowHead('Payment / Head Of Account'), body: payBody
-    }, commonStyle));
+      didParseCell: data => {
+        if(data.section === 'head' && data.row.index === 1){ data.cell.styles.fillColor = PDF_SUBSUB_BLUE; return; }
+        if(data.section !== 'body') return;
+        if(data.row.index === bdRowIdx || data.row.index === subTotalIdx) data.cell.styles.fillColor = [234,242,248];
+        else if(data.row.index === cdIdx) data.cell.styles.fillColor = [251,246,233];
+        else if(data.row.index === totalIdx) data.cell.styles.fillColor = PDF_SUBHEAD_BLUE;
+        if(data.row.index === bdRowIdx || data.row.index === subTotalIdx || data.row.index === cdIdx || data.row.index === totalIdx){
+          data.cell.styles.fontStyle = 'bold';
+        }
+      }
+    });
   });
 
   const label = months.length === 1 ? MONTHS[months[0].month] + '-' + months[0].year : 'all-months';
